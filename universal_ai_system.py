@@ -2,8 +2,7 @@ import requests
 import json
 import os
 from datetime import datetime
-import openai
-import anthropic
+import secrets
 
 class UniversalAISystem:
     def __init__(self):
@@ -22,117 +21,132 @@ class UniversalAISystem:
         # 3. APIs Premium (utilisateur)
         self.user_openai_key = None
         self.user_anthropic_key = None
-        self.user_gemini_key = None
         
         # Personnalités agents WaveAI
         self.agents_profiles = {
             'alex': {
                 'name': 'Alex Wave',
                 'role': 'Expert Productivité Gmail',
-                'personality': 'Efficace, organisé, solutions concrètes',
                 'system_prompt': """Tu es Alex Wave, expert en productivité et gestion Gmail.
 
-PERSONNALITÉ: Professionnel mais accessible, orienté résultats, utilise des émojis pertinents.
+PERSONNALITÉ: Efficace, organisé, orienté résultats. Utilise des émojis professionnels.
 
 EXPERTISE:
-• Gestion optimale des emails Gmail
+• Gestion optimale des emails Gmail (filtres, libellés, automatisation)
 • Techniques de productivité (GTD, Pomodoro, Time-blocking)
-• Automatisation des workflows
 • Organisation du workspace numérique
+• Automatisation des workflows répétitifs
 
-STYLE DE RÉPONSE:
+STYLE:
 - Conseils CONCRETS et ACTIONNABLES
 - Maximum 200 mots
-- Structure en étapes quand pertinent
+- Structure en étapes claires
 - Termine par une question engageante
-- Utilise des émojis professionnels appropriés""",
-                'fallback_keywords': ['email', 'gmail', 'productivité', 'organisation', 'workflow', 'automatisation']
+- Émojis professionnels (📧⚡🎯📊)""",
+                'specialties': ['gmail', 'email', 'productivité', 'organisation', 'workflow', 'automatisation']
             },
             
             'lina': {
                 'name': 'Lina Wave',
-                'role': 'Spécialiste LinkedIn Networking',
-                'personality': 'Chaleureuse, stratégique, centrée relations humaines',
+                'role': 'Spécialisée LinkedIn Networking',
                 'system_prompt': """Tu es Lina Wave, experte LinkedIn et networking professionnel.
 
-PERSONNALITÉ: Sociable, stratégique, bienveillante, comprend les subtilités relationnelles.
+PERSONNALITÉ: Chaleureuse, stratégique, centrée sur les relations humaines authentiques.
 
 EXPERTISE:
-• Optimisation profil LinkedIn
-• Stratégies de contenu professionnel
-• Techniques de networking authentique
-• Personal branding et réputation
-• Growth hacking LinkedIn
+• Optimisation du profil LinkedIn et personal branding
+• Stratégies de contenu professionnel engageant
+• Techniques de networking authentique et durable
+• Développement de l'influence professionnelle
 
-STYLE DE RÉPONSE:
+STYLE:
 - Approche centrée sur la VALEUR HUMAINE
 - Conseils de networking authentique
 - Maximum 200 mots
 - Ton chaleureux et professionnel
-- Questions pour approfondir la relation""",
-                'fallback_keywords': ['linkedin', 'networking', 'professionnel', 'réseau', 'contenu', 'branding']
+- Émojis relationnels (🔗🌟💼🤝)""",
+                'specialties': ['linkedin', 'networking', 'professionnel', 'personal branding', 'influence', 'contenu professionnel']
             },
             
             'marco': {
                 'name': 'Marco Wave',
                 'role': 'Expert Réseaux Sociaux',
-                'personality': 'Créatif, tendance, passionné innovation',
                 'system_prompt': """Tu es Marco Wave, expert réseaux sociaux et contenu viral.
 
-PERSONNALITÉ: Créatif, énergique, au fait des tendances, passionné par l'innovation digitale.
+PERSONNALITÉ: Créatif, énergique, au fait des dernières tendances digitales.
 
 EXPERTISE:
-• Stratégies de contenu viral
-• Gestion multi-plateformes (Instagram, TikTok, etc.)
-• Analyse des performances et métriques
-• Calendriers éditoriaux
-• Storytelling digital moderne
+• Stratégies de contenu viral multi-plateformes
+• Gestion Instagram, TikTok, Twitter optimisée
+• Calendriers éditoriaux et storytelling digital
+• Analyse des performances et growth hacking
 
-STYLE DE RÉPONSE:
+STYLE:
 - Ton ÉNERGIQUE et CRÉATIF
 - Références aux tendances actuelles
-- Conseils de création de contenu
 - Maximum 200 mots
-- Émojis créatifs et modernes""",
-                'fallback_keywords': ['social', 'contenu', 'viral', 'instagram', 'tiktok', 'créativité', 'tendances']
+- Conseils de création de contenu actionnable
+- Émojis créatifs (📱🎨🚀🎬)""",
+                'specialties': ['social media', 'contenu', 'viral', 'instagram', 'tiktok', 'créativité', 'tendances']
             },
             
             'sofia': {
                 'name': 'Sofia Wave',
-                'role': 'Maître Organisation Planning',
-                'personality': 'Méthodique, structurée, obsédée efficacité',
-                'system_prompt': """Tu es Sofia Wave, experte en organisation et planification.
+                'role': 'Experte Organisation Planning',
+                'system_prompt': """Tu es Sofia Wave, maître de l'organisation et de la planification.
 
 PERSONNALITÉ: Méthodique, bienveillante, obsédée par l'efficacité et les systèmes parfaits.
 
 EXPERTISE:
-• Planification stratégique et calendriers
-• Synchronisation multi-agendas
-• Gestion du temps et priorités
-• Systèmes d'organisation personnelle
-• Optimisation des routines
+• Planification stratégique et gestion de calendriers
+• Systèmes d'organisation personnelle (GTD, PARA)
+• Synchronisation multi-agendas et optimisation temporelle
+• Méthodes de productivité et routines optimales
 
-STYLE DE RÉPONSE:
+STYLE:
 - Approche STRUCTURÉE et MÉTHODIQUE
 - Méthodes éprouvées et outils pratiques
 - Maximum 200 mots
-- Propose des systèmes et processus
-- Questions pour clarifier les besoins""",
-                'fallback_keywords': ['planning', 'organisation', 'calendrier', 'temps', 'méthodes', 'systèmes']
+- Propose des systèmes et processus clairs
+- Émojis organisationnels (📅⏰📋🎯)""",
+                'specialties': ['planning', 'organisation', 'calendrier', 'temps', 'méthodes', 'systèmes', 'productivité']
+            },
+            
+            'kai': {
+                'name': 'Kai Wave',
+                'role': 'Assistant Conversationnel Général',
+                'system_prompt': """Tu es Kai Wave, l'assistant conversationnel général de WaveAI.
+
+PERSONNALITÉ: Curieux, empathique, intelligent, avec un sens de l'humour approprié. Tu es le compagnon IA parfait.
+
+RÔLE UNIQUE:
+• Conversations générales et questions ouvertes
+• Support émotionnel et conseils de vie bienveillants
+• Brainstorming créatif et résolution de problèmes
+• Culture générale et vulgarisation scientifique
+• Pont vers les autres agents spécialisés
+
+STYLE:
+- Naturel et conversationnel, comme un ami intelligent
+- Adapte le ton selon le contexte
+- Pose des questions pertinentes pour approfondir
+- Maximum 250 mots pour garder l'échange fluide
+- Peut rediriger vers Alex/Lina/Marco/Sofia si pertinent
+- Émojis variés selon le contexte (🤔💡🧠✨)""",
+                'specialties': ['conversation', 'questions', 'philosophie', 'conseil', 'aide', 'réflexion', 'culture générale']
             }
         }
     
-    def set_user_api_keys(self, openai_key=None, anthropic_key=None, gemini_key=None):
+    def set_user_api_keys(self, openai_key=None, anthropic_key=None):
         """Permet à l'utilisateur d'ajouter ses clés API premium"""
         self.user_openai_key = openai_key
         self.user_anthropic_key = anthropic_key
-        self.user_gemini_key = gemini_key
     
     def get_ai_response(self, agent_name, user_message, user_name=None, user_api_keys=None):
         """Génère une réponse IA en utilisant la meilleure source disponible"""
         
         if agent_name not in self.agents_profiles:
-            return "Désolé, je ne reconnais pas cet agent."
+            return self.get_intelligent_fallback('kai', user_message)
         
         agent = self.agents_profiles[agent_name]
         
@@ -142,32 +156,33 @@ STYLE DE RÉPONSE:
         
         # Construction du contexte
         system_prompt = agent['system_prompt']
-        user_context = f"Utilisateur: {user_name or 'Utilisateur'}\nMessage: {user_message}\n\n{agent['name']}:"
+        user_context = f"Utilisateur: {user_name or 'Utilisateur'}\nMessage: {user_message}\n\nRéponds en tant que {agent['name']}:"
         
         # 🏆 PRIORITÉ 1: APIs Premium Utilisateur
-        response = self.try_premium_apis(system_prompt, user_context, agent_name)
+        response = self.try_premium_apis(system_prompt, user_context)
         if response:
-            return f"🔥 {response}"
+            return f"🔥 {self.clean_response(response, agent_name)}"
         
         # 🌐 PRIORITÉ 2: Hugging Face Gratuit
         response = self.try_huggingface_apis(system_prompt, user_context)
         if response:
-            return f"🤖 {response}"
+            return f"🤖 {self.clean_response(response, agent_name)}"
         
         # 🏠 PRIORITÉ 3: Ollama Local
         response = self.try_ollama_local(system_prompt, user_context)
         if response:
-            return f"🖥️ {response}"
+            return f"🖥️ {self.clean_response(response, agent_name)}"
         
         # 🛡️ FALLBACK: Intelligence Intégrée
         return self.get_intelligent_fallback(agent_name, user_message)
     
-    def try_premium_apis(self, system_prompt, user_context, agent_name):
+    def try_premium_apis(self, system_prompt, user_context):
         """Essaie les APIs premium de l'utilisateur"""
         
         # OpenAI GPT
         if self.user_openai_key:
             try:
+                import openai
                 openai.api_key = self.user_openai_key
                 response = openai.ChatCompletion.create(
                     model="gpt-3.5-turbo",
@@ -185,6 +200,7 @@ STYLE DE RÉPONSE:
         # Anthropic Claude
         if self.user_anthropic_key:
             try:
+                import anthropic
                 client = anthropic.Anthropic(api_key=self.user_anthropic_key)
                 response = client.messages.create(
                     model="claude-3-haiku-20240307",
@@ -226,12 +242,12 @@ STYLE DE RÉPONSE:
                     result = response.json()
                     if isinstance(result, list) and len(result) > 0:
                         text = result[0].get('generated_text', '').strip()
-                        if text and len(text) > 20:  # Réponse valide
-                            return self.clean_ai_response(text)
+                        if text and len(text) > 20:
+                            return text
                     elif isinstance(result, dict):
                         text = result.get('generated_text', '').strip()
                         if text and len(text) > 20:
-                            return self.clean_ai_response(text)
+                            return text
                         
             except Exception as e:
                 print(f"Erreur HF {model_url}: {e}")
@@ -242,48 +258,54 @@ STYLE DE RÉPONSE:
     def try_ollama_local(self, system_prompt, user_context):
         """Essaie Ollama en local"""
         
-        for model in self.ollama_models:
-            try:
-                # Test si Ollama est disponible
-                test_response = requests.get(f"{self.ollama_url}/api/tags", timeout=5)
-                if test_response.status_code != 200:
-                    continue
-                
-                # Génération avec Ollama
-                payload = {
-                    "model": model,
-                    "prompt": f"{system_prompt}\n\n{user_context}",
-                    "stream": False,
-                    "options": {
-                        "temperature": 0.7,
-                        "num_predict": 200
+        try:
+            # Test si Ollama est disponible
+            test_response = requests.get(f"{self.ollama_url}/api/tags", timeout=3)
+            if test_response.status_code != 200:
+                return None
+            
+            for model in self.ollama_models:
+                try:
+                    payload = {
+                        "model": model,
+                        "prompt": f"{system_prompt}\n\n{user_context}",
+                        "stream": False,
+                        "options": {
+                            "temperature": 0.7,
+                            "num_predict": 200
+                        }
                     }
-                }
-                
-                response = requests.post(
-                    f"{self.ollama_url}/api/generate", 
-                    json=payload, 
-                    timeout=30
-                )
-                
-                if response.status_code == 200:
-                    result = response.json()
-                    text = result.get('response', '').strip()
-                    if text and len(text) > 20:
-                        return self.clean_ai_response(text)
-                        
-            except Exception as e:
-                print(f"Erreur Ollama {model}: {e}")
-                continue
+                    
+                    response = requests.post(
+                        f"{self.ollama_url}/api/generate", 
+                        json=payload, 
+                        timeout=20
+                    )
+                    
+                    if response.status_code == 200:
+                        result = response.json()
+                        text = result.get('response', '').strip()
+                        if text and len(text) > 20:
+                            return text
+                            
+                except Exception as e:
+                    print(f"Erreur Ollama {model}: {e}")
+                    continue
+                    
+        except Exception as e:
+            print(f"Ollama non disponible: {e}")
         
         return None
     
-    def clean_ai_response(self, response):
+    def clean_response(self, response, agent_name):
         """Nettoie et optimise la réponse IA"""
         if not response:
             return ""
         
         # Supprimer les préfixes répétitifs
+        agent_info = self.agents_profiles[agent_name]
+        response = response.replace(f"{agent_info['name']}:", "").strip()
+        
         prefixes_to_remove = ['Assistant:', 'AI:', 'Bot:', 'Agent:']
         for prefix in prefixes_to_remove:
             response = response.replace(prefix, '').strip()
@@ -292,53 +314,81 @@ STYLE DE RÉPONSE:
         if len(response) > 350:
             response = response[:350] + "..."
         
+        # Ajouter émoji signature si manquant
+        emoji_map = {
+            'alex': '⚡',
+            'lina': '🌟', 
+            'marco': '🚀',
+            'sofia': '📅',
+            'kai': '🤖'
+        }
+        
+        if not any(emoji in response[:50] for emoji in ['📧', '⚡', '🎯', '🔗', '🌟', '💼', '📱', '🎨', '📅', '⏰', '🤖', '💡']):
+            response = f"{emoji_map.get(agent_name, '🌊')} {response}"
+        
         return response
     
     def get_intelligent_fallback(self, agent_name, user_message):
-        """Fallback intelligent intégré"""
+        """Fallback intelligent si toutes les APIs échouent"""
         
-        agent = self.agents_profiles[agent_name]
         message_lower = user_message.lower()
         
-        # Réponses contextuelles par mots-clés
-        smart_responses = {
+        fallback_responses = {
             'alex': {
-                'email': "📧 Gmail optimisé en 3 étapes : 1) Filtres automatiques par expéditeur/sujet, 2) Libellés colorés par priorité, 3) Règle des 2 minutes. Configurons ensemble votre système personnalisé ! Quel est votre plus gros problème email actuellement ?",
-                'productivité': "⚡ Ma méthode triple efficacité : Planification matinale (15min) + Blocs de focus sans interruption (90min max) + Révision vespérale (10min). Commençons par identifier vos 3 priorités du jour. Lesquelles sont-elles ?",
-                'organisation': "🎯 Système GTD simplifié : Capturer tout dans un seul endroit → Clarifier l'action suivante → Organiser par contexte → Réviser hebdomadairement. Avez-vous un outil de capture fiable actuellement ?",
+                'email': "📧 Gmail optimisé en 3 étapes : 1) Filtres automatiques par expéditeur/sujet, 2) Libellés colorés par priorité, 3) Règle des 2 minutes pour traitement immédiat. Configurons ensemble votre système personnalisé ! Quel est votre plus gros problème email actuellement ?",
+                'productivité': "⚡ Ma méthode triple efficacité : Planification matinale (15min pour définir priorités) + Blocs de focus sans interruption (90min max) + Révision vespérale (10min bilan). Commençons par identifier vos 3 priorités du jour. Lesquelles sont-elles ?",
+                'organisation': "🎯 Système GTD simplifié : Capturer tout dans un seul endroit → Clarifier l'action suivante nécessaire → Organiser par contexte d'action → Réviser hebdomadairement. Avez-vous un outil de capture fiable actuellement ?",
+                'gmail': "📬 Gmail pro en 4 piliers : raccourcis clavier (j/k navigation), réponses types pour emails récurrents, programmation d'envoi, et recherche avancée. Quel aspect vous intéresse le plus ?",
                 'default': "👋 Alex Wave, expert productivité ! Je transforme le chaos quotidien en efficacité zen. Gmail, organisation, workflows... Quel est votre défi numéro 1 aujourd'hui ?"
             },
             'lina': {
-                'linkedin': "🔗 LinkedIn stratégique : Profil magnétique (photo pro + titre accrocheur) + Contenu de valeur 3x/semaine + Engagement authentique quotidien. Sur quel pilier commencer ? Profil, contenu, ou networking ?",
-                'networking': "🌟 Networking authentique = Donner avant de recevoir ! Stratégie : 1) Identifier 5 personnes clés, 2) Partager leur contenu avec commentaires, 3) Messages personnalisés de valeur. Votre secteur d'activité ?",
-                'professionnel': "💼 Personal branding triptyque : Expertise (ce que vous savez faire) + Réputation (ce qu'on dit de vous) + Réseau (qui vous connaît). Lequel développer en priorité absolue ?",
-                'default': "💫 Lina Wave ! Je transforme votre potentiel professionnel en opportunités concrètes. LinkedIn, networking, influence... Quel est votre objectif de développement professionnel ?"
+                'linkedin': "🔗 LinkedIn stratégique : Profil magnétique (photo pro + titre accrocheur + résumé orienté valeur) + Contenu de valeur 3x/semaine + Engagement authentique quotidien. Sur quel pilier commencer ? Profil, contenu, ou networking ?",
+                'networking': "🌟 Networking authentique = Donner avant de recevoir ! Stratégie éprouvée : 1) Identifier 5 personnes clés de votre secteur, 2) Partager leur contenu avec commentaires intelligents, 3) Messages personnalisés apportant de la valeur. Votre secteur d'activité ?",
+                'professionnel': "💼 Personal branding triptyque : Expertise (ce que vous savez faire exceptionnellement) + Réputation (ce qu'on dit de vous) + Réseau (qui vous connaît et vous recommande). Lequel développer en priorité absolue ?",
+                'contenu': "✨ Contenu LinkedIn qui marche : expertise personnelle + histoire authentique + valeur ajoutée claire + call-to-action engageant. Quel message unique voulez-vous porter dans votre secteur ?",
+                'default': "💫 Lina Wave ! Je transforme votre potentiel professionnel en opportunités concrètes. LinkedIn, networking, influence... Quel est votre objectif de développement professionnel prioritaire ?"
             },
             'marco': {
-                'social': "📱 Stratégie social media gagnante : 1 plateforme principale maîtrisée + Contenu pilier cohérent + Engagement régulier authentique. Instagram, TikTok, LinkedIn ? Laquelle prioriser pour commencer ?",
-                'contenu': "🎨 Formule contenu engageant : Storytelling personnel + Valeur ajoutée claire + Émotion authentique + Call-to-action précis. Quel message unique voulez-vous porter au monde ?",
-                'viral': "🚀 Ingrédients viralité 2024 : Timing optimal + Émotion forte + Facilité de partage + Pertinence culturelle. Mais l'engagement authentique bat la viralité ! Votre niche d'expertise ?",
-                'default': "🎬 Marco Wave ! Expert en contenu qui cartonne sur les réseaux. Je transforme vos idées en publications qui engagent vraiment. Quel défi créatif vous préoccupe ?"
+                'social': "📱 Stratégie social media gagnante : 1 plateforme principale maîtrisée + Contenu pilier cohérent avec votre expertise + Engagement régulier authentique. Instagram, TikTok, LinkedIn ? Laquelle prioriser pour commencer ?",
+                'contenu': "🎨 Formule contenu engageant : Storytelling personnel authentique + Valeur ajoutée claire pour l'audience + Émotion genuine + Call-to-action précis. Quel message unique voulez-vous porter au monde ?",
+                'viral': "🚀 Ingrédients viralité 2024 : Timing optimal selon votre audience + Émotion forte (surprise, inspiration, humour) + Facilité de partage + Pertinence culturelle. Mais l'engagement authentique bat la viralité ! Votre niche d'expertise ?",
+                'instagram': "📸 Instagram 2024 : Reels créatifs courts (15-30s) + Stories interactives quotidiennes + Posts carrousel éducatifs. Focus sur UNE niche pour devenir LA référence. Votre domaine d'expertise ?",
+                'créativité': "💡 Créativité digitale : s'inspirer des leaders + expérimenter sans peur + analyser les performances + itérer rapidement. Quel format créatif voulez-vous tester cette semaine ?",
+                'default': "🎬 Marco Wave ! Expert en contenu qui cartonne sur les réseaux. Je transforme vos idées en publications qui engagent vraiment votre audience. Quel défi créatif vous préoccupe ?"
             },
             'sofia': {
-                'planning': "📅 Planification stratégique en pyramide : Vision annuelle → Objectifs trimestriels → Plans mensuels → Actions hebdomadaires → Tâches quotidiennes. Vos 3 grandes priorités de ce mois ?",
-                'organisation': "📋 Mon système d'organisation universel : Capture centralisée → Clarification immédiate → Catégorisation logique → Actions programmées → Révision hebdomadaire. Quel maillon faible identifier ?",
-                'calendrier': "⏰ Calendrier zen en 4 règles : 1) Bloquer les priorités AVANT tout, 2) Garder 25% de buffer imprévu, 3) Grouper les tâches similaires, 4) Révisions quotidiennes 10min. Votre défi temporel principal ?",
-                'default': "🗓️ Sofia Wave ! Je transforme le chaos en sérénité organisée. Planning, calendriers, systèmes... Quelle zone de votre vie mérite une organisation parfaite en premier ?"
+                'planning': "📅 Planification stratégique en pyramide : Vision annuelle claire → Objectifs trimestriels mesurables → Plans mensuels détaillés → Actions hebdomadaires → Tâches quotidiennes. Vos 3 grandes priorités de ce mois ?",
+                'organisation': "📋 Mon système d'organisation universel : Capture centralisée de tout → Clarification immédiate de l'action → Catégorisation logique par contexte → Actions programmées dans l'agenda → Révision hebdomadaire complète. Quel maillon faible identifier ?",
+                'calendrier': "⏰ Calendrier zen en 4 règles d'or : 1) Bloquer les priorités AVANT tout le reste, 2) Garder 25% de buffer pour l'imprévu, 3) Grouper les tâches similaires par blocs, 4) Révisions quotidiennes 10min. Votre défi temporel principal ?",
+                'temps': "🕐 Gestion du temps maîtrisée : matrices d'Eisenhower pour prioriser, time-blocking pour protéger le focus, technique Pomodoro pour l'exécution. Quelle méthode résonne le plus avec vous ?",
+                'méthodes': "🎯 Méthodes d'organisation éprouvées : GTD pour la capture, PARA pour le classement, Zettelkasten pour les idées, Bullet Journal pour le suivi. Laquelle vous attire le plus ?",
+                'default': "🗓️ Sofia Wave ! Je transforme le chaos en sérénité organisée parfaite. Planning, calendriers, systèmes... Quelle zone de votre vie mérite une organisation parfaite en premier ?"
+            },
+            'kai': {
+                'question': "🤔 Excellente question ! J'adore quand on creuse les sujets en profondeur. Donne-moi plus de contexte et explorons ça ensemble ! Qu'est-ce qui t'amène à te poser cette question précisément ?",
+                'philosophie': "🧠 Ah, la philosophie ! Questions existentielles, éthique, sens de la vie, nature de la réalité... Quel aspect t'intrigue le plus ? J'aime ces discussions qui nous font réfléchir sur l'essentiel !",
+                'aide': "🤝 Je suis là pour t'aider, quelle que soit la situation ! Que ce soit pour réfléchir ensemble, résoudre un problème complexe, ou juste avoir une oreille attentive. Raconte-moi ce qui te préoccupe.",
+                'conseil': "💭 Les conseils, c'est délicat... Chaque situation est tellement unique ! Partage-moi ton contexte, tes enjeux, ce que tu as déjà essayé, et réfléchissons ensemble aux meilleures options possibles.",
+                'comment': "🛠️ Les 'comment', j'adore ! Que veux-tu apprendre à faire ? Je peux t'expliquer étape par étape, ou si c'est très spécialisé, je connais les experts parfaits chez WaveAI : Alex, Lina, Marco ou Sofia !",
+                'pourquoi': "🧐 Ah, les grands 'pourquoi' ! Ces questions fascinantes qui nous font réfléchir. De quoi parles-tu exactement ? Philosophie, science, société, psychologie, existence ? J'adore creuser ces sujets !",
+                'intéressant': "✨ Quelque chose d'intéressant ? Alors... savais-tu que les pieuvres ont 3 cœurs et du sang bleu ? Ou que les fourmis peuvent porter 50x leur poids ? Tu préfères science, techno, histoire, culture ?",
+                'réfléchir': "💡 Brainstorming time ! J'adore réfléchir ensemble et explorer les idées sous tous les angles. Quel sujet te trotte dans la tête ? Projet personnel, dilemme professionnel, idée créative ?",
+                'expliquer': "🎓 J'adore expliquer et vulgariser ! Quel concept, phénomène ou sujet t'intrigue ? Sciences, technologie, société, psychologie... Je vais essayer de rendre ça clair et passionnant !",
+                'chat': "😊 Salut ! Super content de discuter avec toi ! Comment ça va dans ta vie ? Qu'est-ce qui t'occupe l'esprit ces temps-ci ? Projets excitants, réflexions profondes, découvertes récentes ?",
+                'random': "🎲 Question random ? Perfect ! En voici une pour toi : si tu pouvais dîner avec 3 personnes (vivantes ou mortes), qui choisirais-tu et pourquoi ? Ça en dit long sur ce qui nous inspire !",
+                'conseil': "💖 Pour les conseils de vie, j'essaie d'être bienveillant et de t'aider à trouver TES réponses plutôt que de t'imposer les miennes. Raconte-moi ta situation, on va réfléchir ensemble !",
+                'default': "👋 Salut ! Je suis Kai Wave, ton compagnon IA pour toutes les discussions ! Questions existentielles, réflexions random, conseils, brainstorming créatif... De quoi as-tu envie de parler aujourd'hui ? 🤖✨"
             }
         }
         
-        if agent_name in smart_responses:
-            responses = smart_responses[agent_name]
+        if agent_name in fallback_responses:
+            responses = fallback_responses[agent_name]
             
-            # Recherche de mot-clé pertinent
+            # Recherche de mots-clés pertinents
             for keyword, response in responses.items():
                 if keyword != 'default' and keyword in message_lower:
                     return response
             
             return responses['default']
         
-        return "🌊 Je suis là pour vous aider ! Pouvez-vous préciser votre demande ?"
-
-# Instance globale
-universal_ai = UniversalAISystem()
+        return "🌊 Je suis là pour vous aider ! Pouvez-vous préc<span class="cursor">█</span>
