@@ -1,198 +1,709 @@
-{% extends "base.html" %}
-
-{% block title %}Paramètres IA - WaveAI{% endblock %}
-
-{% block nav %}
-<a href="/dashboard" class="btn">← Dashboard</a>
-<span style="opacity: 0.8;">{{ user.name }}</span>
-{% endblock %}
-
-{% block styles %}
-.settings-container {
-    max-width: 800px;
-    margin: 0 auto;
-}
-
-.ai-option {
-    background: var(--glass-bg);
-    backdrop-filter: blur(15px);
-    border: 1px solid var(--glass-border);
-    border-radius: 15px;
-    padding: 25px;
-    margin-bottom: 20px;
-}
-
-.ai-option.active {
-    border-color: #4ade80;
-    background: rgba(34, 197, 94, 0.1);
-}
-
-.form-group {
-    margin-bottom: 20px;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: bold;
-}
-
-.form-group input {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid var(--glass-border);
-    border-radius: 8px;
-    background: rgba(255,255,255,0.1);
-    color: white;
-}
-
-.form-group input::placeholder {
-    color: rgba(255,255,255,0.6);
-}
-
-.status-indicator {
-    display: inline-block;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    margin-right: 8px;
-}
-
-.status-active { background: #4ade80; }
-.status-inactive { background: #6b7280; }
-.status-error { background: #ef4444; }
-{% endblock %}
-
-{% block content %}
-<div class="settings-container">
-    <h1 style="text-align: center; margin-bottom: 40px;">⚙️ Configuration IA WaveAI</h1>
-    
-    <div class="ai-option">
-        <h3><span class="status-indicator status-active"></span>🌐 Hugging Face (Gratuit)</h3>
-        <p>IA gratuite Llama-2 et Mistral. Qualité élevée, limites raisonnables.</p>
-        <p><strong>Status :</strong> <span style="color: #4ade80;">✅ Actif par défaut</span></p>
-        
-        <div class="form-group">
-            <label>Token Hugging Face (Optionnel - améliore les limites) :</label>
-            <input type="password" id="hf_token" placeholder="hf_xxxxxxxxxxxx">
-            <small style="opacity: 0.7;">Obtenez votre token gratuit sur huggingface.co</small>
-        </div>
-    </div>
-    
-    <div class="ai-option">
-        <h3><span class="status-indicator status-inactive"></span>🏠 Ollama Local (Offline)</h3>
-        <p>IA locale sur votre serveur. Zéro limite, zéro coût, fonctionne offline.</p>
-        <p><strong>Status :</strong> <span style="color: #6b7280;">⏸️ Non configuré</span></p>
-        
-        <div class="form-group">
-            <label>URL Ollama :</label>
-            <input type="text" id="ollama_url" placeholder="http://localhost:11434" value="http://localhost:11434">
-            <small style="opacity: 0.7;">Installez Ollama sur votre serveur pour l'activer</small>
-        </div>
-    </div>
-    
-    <div class="ai-option">
-        <h3><span class="status-indicator status-inactive"></span>💎 APIs Premium (Votre choix)</h3>
-        <p>Qualité maximale avec vos clés API. Vous contrôlez les coûts.</p>
-        
-        <div class="form-group">
-            <label>🔥 OpenAI API Key :</label>
-            <input type="password" id="openai_key" placeholder="sk-xxxxxxxxxxxx">
-            <small style="opacity: 0.7;">~0.002$/1000 mots - Qualité exceptionnelle</small>
-        </div>
-        
-        <div class="form-group">
-            <label>🧠 Anthropic Claude API Key :</label>
-            <input type="password" id="anthropic_key" placeholder="sk-ant-xxxxxxxxxxxx">
-            <small style="opacity: 0.7;">~0.001$/1000 mots - Très précis</small>
-        </div>
-    </div>
-    
-    <div style="text-align: center; margin-top: 40px;">
-        <button class="btn btn-primary" onclick="saveSettings()" style="font-size: 1.1em; padding: 15px 30px;">
-            💾 Sauvegarder Configuration
-        </button>
-        <button class="btn" onclick="testAI()" style="margin-left: 15px;">
-            🧪 Tester IA
-        </button>
-    </div>
-    
-    <div id="status-message" style="text-align: center; margin-top: 20px;"></div>
-</div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-async function saveSettings() {
-    const settings = {
-        hf_token: document.getElementById('hf_token').value,
-        ollama_url: document.getElementById('ollama_url').value,
-        openai_key: document.getElementById('openai_key').value,
-        anthropic_key: document.getElementById('anthropic_key').value
-    };
-    
-    try {
-        const response = await fetch('/api/ai/settings', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(settings)
-        });
-        
-        const data = await response.json();
-        const statusDiv = document.getElementById('status-message');
-        
-        if (data.success) {
-            statusDiv.innerHTML = '<p style="color: #4ade80;">✅ Configuration sauvegardée !</p>';
-        } else {
-            statusDiv.innerHTML = '<p style="color: #ef4444;">❌ Erreur: ' + data.message + '</p>';
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paramètres IA - WaveAI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --wave-primary: #0f4c75;
+            --wave-secondary: #3282b8;
+            --wave-accent: #bbe1fa;
+            --wave-light: #f8f9fa;
+            --wave-dark: #2c3e50;
+            --wave-success: #27ae60;
+            --wave-warning: #f39c12;
+            --wave-error: #e74c3c;
         }
-    } catch (error) {
-        document.getElementById('status-message').innerHTML = '<p style="color: #ef4444;">❌ Erreur de connexion</p>';
-    }
-}
-
-async function testAI() {
-    const statusDiv = document.getElementById('status-message');
-    statusDiv.innerHTML = '<p style="color: #06b6d4;">🧪 Test en cours...</p>';
-    
-    try {
-        const response = await fetch('/api/ai/test', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: 'Test de fonctionnement IA' })
-        });
         
-        const data = await response.json();
-        
-        if (data.success) {
-            statusDiv.innerHTML = `
-                <div style="color: #4ade80;">
-                    <p>✅ Test réussi !</p>
-                    <p><strong>Source IA :</strong> ${data.ai_source}</p>
-                    <p><strong>Réponse :</strong> "${data.response.substring(0, 100)}..."</p>
-                </div>
-            `;
-        } else {
-            statusDiv.innerHTML = '<p style="color: #ef4444;">❌ Test échoué: ' + data.message + '</p>';
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-    } catch (error) {
-        statusDiv.innerHTML = '<p style="color: #ef4444;">❌ Erreur de test</p>';
-    }
-}
-
-// Charger les paramètres existants
-document.addEventListener('DOMContentLoaded', function() {
-    fetch('/api/ai/settings')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success && data.settings) {
-                document.getElementById('hf_token').value = data.settings.hf_token || '';
-                document.getElementById('ollama_url').value = data.settings.ollama_url || 'http://localhost:11434';
-                document.getElementById('openai_key').value = data.settings.openai_key || '';
-                document.getElementById('anthropic_key').value = data.settings.anthropic_key || '';
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--wave-primary) 0%, var(--wave-secondary) 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        
+        .settings-header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .back-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            background: linear-gradient(45deg, var(--wave-accent), #ffffff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .main-content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .intro-section {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        
+        .intro-title {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, var(--wave-accent), #ffffff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .intro-subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+        }
+        
+        .settings-form {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .form-section {
+            margin-bottom: 2.5rem;
+        }
+        
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--wave-accent);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .section-description {
+            font-size: 0.95rem;
+            opacity: 0.8;
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--wave-accent);
+        }
+        
+        .form-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 0.8rem 1rem;
+            color: white;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .form-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--wave-accent);
+            box-shadow: 0 0 0 2px rgba(187, 225, 250, 0.3);
+            background: rgba(255, 255, 255, 0.15);
+        }
+        
+        .form-select {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 0.8rem 1rem;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+        
+        .form-select option {
+            background: var(--wave-primary);
+            color: white;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        .checkbox-input {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--wave-accent);
+        }
+        
+        .checkbox-label {
+            font-size: 0.95rem;
+            cursor: pointer;
+        }
+        
+        .range-group {
+            margin-top: 1rem;
+        }
+        
+        .range-input {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            outline: none;
+            accent-color: var(--wave-accent);
+        }
+        
+        .range-value {
+            text-align: center;
+            font-weight: 600;
+            color: var(--wave-accent);
+            margin-top: 0.5rem;
+        }
+        
+        .help-text {
+            font-size: 0.85rem;
+            opacity: 0.7;
+            margin-top: 0.5rem;
+            font-style: italic;
+        }
+        
+        .warning-box {
+            background: rgba(243, 156, 18, 0.1);
+            border: 1px solid rgba(243, 156, 18, 0.3);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .warning-title {
+            color: #f39c12;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .success-box {
+            background: rgba(39, 174, 96, 0.1);
+            border: 1px solid rgba(39, 174, 96, 0.3);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .success-title {
+            color: #27ae60;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .info-box {
+            background: rgba(52, 152, 219, 0.1);
+            border: 1px solid rgba(52, 152, 219, 0.3);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .info-title {
+            color: #3498db;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .api-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        
+        .status-active {
+            background: var(--wave-success);
+        }
+        
+        .status-inactive {
+            background: var(--wave-warning);
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 0.8rem 2rem;
+            border: none;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-primary {
+            background: var(--wave-accent);
+            color: var(--wave-primary);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(187, 225, 250, 0.4);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .test-connection {
+            background: rgba(39, 174, 96, 0.2);
+            color: #27ae60;
+            border: 1px solid rgba(39, 174, 96, 0.3);
+            padding: 0.5rem 1rem;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .test-connection:hover {
+            background: rgba(39, 174, 96, 0.3);
+        }
+        
+        .divider {
+            height: 1px;
+            background: rgba(255, 255, 255, 0.2);
+            margin: 2rem 0;
+        }
+        
+        @media (max-width: 768px) {
+            .settings-header {
+                padding: 1rem;
+                flex-direction: column;
+                gap: 1rem;
             }
-        })
-        .catch(error => console.log('Paramètres par défaut chargés'));
-});
-</script>
-{% endblock %}
+            
+            .main-content {
+                padding: 1rem;
+            }
+            
+            .intro-title {
+                font-size: 2rem;
+            }
+            
+            .settings-form {
+                padding: 1.5rem;
+            }
+            
+            .form-actions {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 100%;
+                max-width: 300px;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="settings-header">
+        <div class="header-left">
+            <a href="{{ url_for('dashboard') }}" class="back-btn">
+                ← Retour
+            </a>
+            <h1 class="page-title">🤖 Paramètres IA</h1>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Intro Section -->
+        <div class="intro-section">
+            <h1 class="intro-title">Configuration IA 🌊</h1>
+            <p class="intro-subtitle">
+                Personnalisez votre expérience WaveAI en configurant vos services IA préférés.
+                Vos clés API sont stockées de manière sécurisée et chiffrée.
+            </p>
+        </div>
+
+        <!-- Settings Form -->
+        <form method="POST" class="settings-form">
+            <!-- Free AI Section -->
+            <div class="form-section">
+                <h2 class="section-title">
+                    🆓 IA Gratuite (Recommandé pour débuter)
+                </h2>
+                <div class="section-description">
+                    Hugging Face offre un accès gratuit à leurs modèles IA. Un token est optionnel mais recommandé pour de meilleures performances.
+                </div>
+                
+                <div class="success-box">
+                    <div class="success-title">
+                        ✅ Service Gratuit Activé
+                    </div>
+                    <p>WaveAI utilise Hugging Face par défaut. Aucune configuration requise !</p>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="huggingface_token">
+                        🤗 Token Hugging Face (Optionnel)
+                    </label>
+                    <input 
+                        type="password" 
+                        id="huggingface_token" 
+                        name="huggingface_token" 
+                        class="form-input"
+                        value="{{ user.ai_settings.huggingface_token or '' }}"
+                        placeholder="hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                    >
+                    <div class="help-text">
+                        Obtenez votre token gratuit sur <a href="https://huggingface.co/settings/tokens" target="_blank" style="color: var(--wave-accent);">huggingface.co</a>
+                    </div>
+                    <div class="api-status">
+                        <div class="status-dot status-active"></div>
+                        <span>Service disponible</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Local AI Section -->
+            <div class="form-section">
+                <h2 class="section-title">
+                    🏠 IA Locale (Ollama)
+                </h2>
+                <div class="section-description">
+                    Ollama vous permet d'exécuter des modèles IA directement sur votre ordinateur, sans connexion internet.
+                </div>
+                
+                {% if ollama_available %}
+                <div class="success-box">
+                    <div class="success-title">
+                        ✅ Ollama Détecté
+                    </div>
+                    <p>Ollama est installé et fonctionne sur votre machine !</p>
+                </div>
+                {% else %}
+                <div class="info-box">
+                    <div class="info-title">
+                        ℹ️ Ollama Non Installé
+                    </div>
+                    <p>Installez Ollama pour une IA complètement locale et privée.</p>
+                    <a href="https://ollama.ai" target="_blank" style="color: var(--wave-accent);">Télécharger Ollama →</a>
+                </div>
+                {% endif %}
+                
+                <div class="checkbox-group">
+                    <input 
+                        type="checkbox" 
+                        id="use_ollama" 
+                        name="use_ollama" 
+                        class="checkbox-input"
+                        {% if user.ai_settings.use_ollama %}checked{% endif %}
+                    >
+                    <label class="checkbox-label" for="use_ollama">
+                        Utiliser Ollama quand disponible
+                    </label>
+                </div>
+                
+                <div class="api-status">
+                    <div class="status-dot {% if ollama_available %}status-active{% else %}status-inactive{% endif %}"></div>
+                    <span>{% if ollama_available %}Disponible{% else %}Non installé{% endif %}</span>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Premium AI Section -->
+            <div class="form-section">
+                <h2 class="section-title">
+                    💎 IA Premium (Optionnel)
+                </h2>
+                <div class="section-description">
+                    Ajoutez vos propres clés API pour accéder aux modèles IA les plus avancés.
+                </div>
+                
+                <div class="warning-box">
+                    <div class="warning-title">
+                        ⚠️ Important
+                    </div>
+                    <p>Ces services sont payants. Consultez les tarifs sur leurs sites officiels.</p>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="openai_key">
+                        🧠 Clé API OpenAI
+                    </label>
+                    <input 
+                        type="password" 
+                        id="openai_key" 
+                        name="openai_key" 
+                        class="form-input"
+                        value="{{ user.ai_settings.openai_api_key or '' }}"
+                        placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                    >
+                    <div class="help-text">
+                        Obtenez votre clé sur <a href="https://platform.openai.com/api-keys" target="_blank" style="color: var(--wave-accent);">platform.openai.com</a>
+                    </div>
+                    <div class="api-status">
+                        <div class="status-dot {% if user.ai_settings.openai_api_key %}status-active{% else %}status-inactive{% endif %}"></div>
+                        <span>{% if user.ai_settings.openai_api_key %}Configuré{% else %}Non configuré{% endif %}</span>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="anthropic_key">
+                        🤖 Clé API Anthropic (Claude)
+                    </label>
+                    <input 
+                        type="password" 
+                        id="anthropic_key" 
+                        name="anthropic_key" 
+                        class="form-input"
+                        value="{{ user.ai_settings.anthropic_api_key or '' }}"
+                        placeholder="sk-ant-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                    >
+                    <div class="help-text">
+                        Obtenez votre clé sur <a href="https://console.anthropic.com/" target="_blank" style="color: var(--wave-accent);">console.anthropic.com</a>
+                    </div>
+                    <div class="api-status">
+                        <div class="status-dot {% if user.ai_settings.anthropic_api_key %}status-active{% else %}status-inactive{% endif %}"></div>
+                        <span>{% if user.ai_settings.anthropic_api_key %}Configuré{% else %}Non configuré{% endif %}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Preferences Section -->
+            <div class="form-section">
+                <h2 class="section-title">
+                    ⚙️ Préférences
+                </h2>
+                <div class="section-description">
+                    Personnalisez le comportement de vos agents IA.
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="default_model">
+                        🎯 Modèle IA Préféré
+                    </label>
+                    <select id="default_model" name="default_model" class="form-select">
+                        <option value="huggingface" {% if user.ai_settings.default_model == 'huggingface' %}selected{% endif %}>
+                            🤗 Hugging Face (Gratuit)
+                        </option>
+                        <option value="ollama" {% if user.ai_settings.default_model == 'ollama' %}selected{% endif %}>
+                            🏠 Ollama (Local)
+                        </option>
+                        <option value="openai" {% if user.ai_settings.default_model == 'openai' %}selected{% endif %}>
+                            🧠 OpenAI (Premium)
+                        </option>
+                        <option value="anthropic" {% if user.ai_settings.default_model == 'anthropic' %}selected{% endif %}>
+                            🤖 Anthropic (Premium)
+                        </option>
+                    </select>
+                    <div class="help-text">
+                        WaveAI utilisera automatiquement des alternatives si le modèle préféré n'est pas disponible.
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="temperature">
+                        🌡️ Créativité (Température)
+                    </label>
+                    <div class="range-group">
+                        <input 
+                            type="range" 
+                            id="temperature" 
+                            name="temperature" 
+                            class="range-input"
+                            min="0" 
+                            max="1" 
+                            step="0.1" 
+                            value="{{ user.ai_settings.temperature or 0.7 }}"
+                            oninput="updateTemperatureValue(this.value)"
+                        >
+                        <div class="range-value" id="temperatureValue">{{ user.ai_settings.temperature or 0.7 }}</div>
+                    </div>
+                    <div class="help-text">
+                        0 = Réponses précises et cohérentes | 1 = Réponses créatives et variées
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="max_tokens">
+                        📝 Longueur Maximale des Réponses
+                    </label>
+                    <div class="range-group">
+                        <input 
+                            type="range" 
+                            id="max_tokens" 
+                            name="max_tokens" 
+                            class="range-input"
+                            min="100" 
+                            max="2000" 
+                            step="100" 
+                            value="{{ user.ai_settings.max_tokens or 1000 }}"
+                            oninput="updateTokensValue(this.value)"
+                        >
+                        <div class="range-value" id="tokensValue">{{ user.ai_settings.max_tokens or 1000 }} tokens</div>
+                    </div>
+                    <div class="help-text">
+                        Plus de tokens = réponses plus longues mais coût plus élevé pour les APIs payantes
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                    💾 Sauvegarder
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="testConnections()">
+                    🧪 Tester Connexions
+                </button>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+                    ❌ Annuler
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        function updateTemperatureValue(value) {
+            document.getElementById('temperatureValue').textContent = parseFloat(value).toFixed(1);
+        }
+        
+        function updateTokensValue(value) {
+            document.getElementById('tokensValue').textContent = value + ' tokens';
+        }
+        
+        function testConnections() {
+            alert('Test des connexions en cours...\n\nCette fonctionnalité sera bientôt disponible !');
+            
+            // Future implementation
+            // fetch('/api/test-connections', { method: 'POST' })
+            //     .then(response => response.json())
+            //     .then(data => {
+            //         // Show test results
+            //     });
+        }
+        
+        // Form validation
+        document.querySelector('.settings-form').addEventListener('submit', function(e) {
+            const openaiKey = document.getElementById('openai_key').value;
+            const anthropicKey = document.getElementById('anthropic_key').value;
+            
+            if (openaiKey && !openaiKey.startsWith('sk-')) {
+                alert('La clé OpenAI doit commencer par "sk-"');
+                e.preventDefault();
+                return false;
+            }
+            
+            if (anthropicKey && !anthropicKey.startsWith('sk-ant-')) {
+                alert('La clé Anthropic doit commencer par "sk-ant-"');
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // Auto-save indication
+        let saveTimeout;
+        document.querySelectorAll('input, select').forEach(input => {
+            input.addEventListener('change', function() {
+                clearTimeout(saveTimeout);
+                saveTimeout = setTimeout(() => {
+                    // Visual indication that changes need to be saved
+                    const saveBtn = document.querySelector('.btn-primary');
+                    saveBtn.style.animation = 'pulse 0.5s ease';
+                    setTimeout(() => saveBtn.style.animation = '', 500);
+                }, 1000);
+            });
+        });
+    </script>
+</body>
+</html>
