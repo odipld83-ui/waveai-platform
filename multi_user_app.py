@@ -2,8 +2,8 @@ from flask import Flask, render_template, request, jsonify, session, redirect, u
 from flask_sqlalchemy import SQLAlchemy
 import os
 from datetime import datetime
-from universal_ai_system import universal_ai
 import secrets
+from universal_ai_system import universal_ai
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'waveai-super-secret-key-2024')
@@ -50,6 +50,14 @@ def dashboard():
         return redirect(url_for('login'))
     
     return render_template('dashboard.html', user=user)
+
+@app.route('/ai-settings')
+def ai_settings():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    user = User.query.get(session['user_id'])
+    return render_template('ai_settings.html', user=user)
 
 @app.route('/agents/<agent_name>')
 def agent_interface(agent_name):
@@ -217,6 +225,11 @@ def agent_interface(agent_name):
                 display: none; opacity: 0.7; font-style: italic; margin: 10px 0;
             }}
             
+            .ai-info {{
+                text-align: center; margin-top: 15px; opacity: 0.6; font-size: 0.8em;
+                padding: 8px; background: rgba(0,0,0,0.1); border-radius: 10px;
+            }}
+            
             @keyframes fadeIn {{
                 from {{ opacity: 0; transform: translateY(10px); }}
                 to {{ opacity: 1; transform: translateY(0); }}
@@ -251,7 +264,7 @@ def agent_interface(agent_name):
             </div>
             
             <div class="typing-indicator" id="typingIndicator">
-                {agent["name"]} est en train d'écrire...
+                {agent["name"]} réfléchit...
             </div>
             
             <div class="chat-input">
@@ -261,6 +274,10 @@ def agent_interface(agent_name):
             
             <div class="suggestions">
                 {suggestions_html}
+            </div>
+            
+            <div class="ai-info" id="aiInfo">
+                🧠 IA Hybride : Hugging Face + Ollama + APIs Premium
             </div>
         </div>
         
@@ -295,6 +312,8 @@ def agent_interface(agent_name):
                     
                     if (data.success) {{
                         addMessage(data.response, false);
+                        // Mettre à jour l'info IA
+                        updateAIInfo(data.ai_source, data.model_info);
                     }} else {{
                         addMessage('❌ ' + data.message, false);
                     }}
@@ -333,6 +352,11 @@ def agent_interface(agent_name):
                 document.getElementById('chatMessages').scrollTop = 
                 document.getElementById('chatMessages').scrollHeight;
             }}
+        }}
+        
+        function updateAIInfo(source, modelInfo) {{
+            const aiInfo = document.getElementById('aiInfo');
+            aiInfo.textContent = `${{modelInfo}} - Source: ${{source}}`;
         }}
         
         // Envoyer avec Entrée
@@ -429,94 +453,177 @@ def chat_api(agent_name):
     if len(message) > 500:
         return jsonify({'success': False, 'message': 'Message trop long (max 500 caractères)'})
     
-    # Réponses intelligentes par agent (INCLUANT KAI)
-    agent_responses = {
-        'alex': {
-            'email': "📧 Gmail optimisé : filtres automatiques + libellés colorés + règle des 2min. Configurons votre système ! Quel est votre plus gros souci email ?",
-            'productivité': "⚡ Ma méthode triple : planification matinale (15min) + blocs focus (90min) + révision (10min). Votre défi principal ?",
-            'organisation': "🎯 Système GTD : capturer → clarifier → organiser → réviser. Par où commencer ?",
-            'gmail': "📬 Gmail pro : raccourcis clavier + réponses types + programmation d'envoi. Quel aspect vous intéresse ?",
-            'workflow': "🔄 Workflow optimisé : automatisation + templates + processus répétables. Quelle tâche répétez-vous le plus ?",
-            'default': "👋 Alex Wave ! Expert productivité Gmail. Je transforme le chaos en efficacité. Votre plus grand défi de productivité ?"
-        },
-        'lina': {
-            'linkedin': "🔗 LinkedIn stratégique : profil magnétique + contenu régulier + networking authentique. Sur quoi commencer ?",
-            'networking': "🌟 Networking = donner avant recevoir ! Identifions vos 5 contacts cibles. Votre secteur d'activité ?",
-            'professionnel': "💼 Personal branding : expertise + réputation + réseau. Lequel développer en priorité ?",
-            'contenu': "✨ Contenu LinkedIn qui marche : expertise + histoire + valeur + CTA. Votre message unique ?",
-            'réseau': "🤝 Développement réseau : veille + commentaires + messages personnalisés. Combien de contacts par semaine ?",
-            'default': "💫 Lina Wave ! Je transforme votre potentiel pro en opportunités concrètes. Votre objectif LinkedIn ?"
-        },
-        'marco': {
-            'social': "📱 Social media gagnant : 1 plateforme maîtrisée + contenu pilier + engagement. Votre priorité ?",
-            'contenu': "🎨 Contenu viral : storytelling + émotion + valeur + timing. Quel message porter ?",
-            'instagram': "📸 Instagram 2024 : Reels créatifs + Stories interactives + posts carrousel. Votre niche ?",
-            'tiktok': "🎵 TikTok : tendances + authenticité + régularité. Montrons votre expertise !",
-            'viral': "🚀 Viralité : timing + émotion + partageabilité. Mais l'engagement authentique prime !",
-            'créativité': "💡 Créativité digitale : inspiration + expérimentation + analyse. Quel format tester ?",
-            'default': "🎬 Marco Wave ! Expert contenu qui cartonne. Transformons vos idées en publications engageantes !"
-        },
-        'sofia': {
-            'planning': "📅 Planning parfait : vision → objectifs → actions. Vos 3 priorités du mois ?",
-            'organisation': "📋 Organisation zen : capture → clarification → action → révision. Votre outil actuel ?",
-            'calendrier': "⏰ Calendrier optimisé : priorités d'abord + 25% buffer + groupage. Votre défi ?",
-            'temps': "🕐 Gestion temps : matrice Eisenhower + time-blocking + Pomodoro. Quelle méthode ?",
-            'agenda': "🗓️ Agenda parfait : synchronisation + couleurs + rappels. Combien de calendriers ?",
-            'méthodes': "🎯 Méthodes éprouvées : GTD + PARA + Zettelkasten. Laquelle vous attire ?",
-            'default': "🗓️ Sofia Wave ! Je transforme le chaos en sérénité organisée. Quelle zone organiser en premier ?"
-        },
-        'kai': {
-            'question': "🤔 Excellente question ! J'adore creuser les sujets. Donne-moi plus de contexte et explorons ça ensemble ! Qu'est-ce qui t'amène à te poser ça ?",
-            'philosophie': "🧠 Ah, la philosophie ! Questions existentielles, éthique, sens de la vie... Quel aspect t'intrigue ? J'aime ces discussions qui font réfléchir !",
-            'aide': "🤝 Je suis là pour t'aider ! Que ce soit réfléchir, résoudre un problème, ou juste discuter. Raconte-moi ce qui te préoccupe.",
-            'conseil': "💭 Les conseils, c'est personnel... Chaque situation est unique ! Partage ton contexte et tes enjeux, qu'on réfléchisse ensemble.",
-            'comment': "🛠️ Les 'comment', j'adore ! Que veux-tu apprendre ? Je peux expliquer, ou te diriger vers Alex, Lina, Marco ou Sofia si c'est leur domaine !",
-            'pourquoi': "🧐 Les grands 'pourquoi' ! Questions fascinantes. De quoi parles-tu ? Science, société, psychologie, existence ?",
-            'intéressant': "✨ Quelque chose d'intéressant ? Alors... savais-tu que les pieuvres ont 3 cœurs et du sang bleu ? Ou préfères-tu science, techno, culture ?",
-            'réfléchir': "💡 Brainstorming time ! J'adore réfléchir ensemble. Quel sujet te trotte dans la tête ? Projet, dilemme, idée créative ?",
-            'expliquer': "🎓 J'adore expliquer ! Quel concept t'intrigue ? Sciences, techno, société, psychologie... Je rends ça clair et intéressant !",
-            'chat': "😊 Salut ! Content de discuter ! Comment ça va ? Qu'est-ce qui t'occupe l'esprit ces temps-ci ? Projets, réflexions, découvertes ?",
-            'random': "🎲 Question random ? Perfect ! Voici : si tu pouvais dîner avec 3 personnes (vivantes ou mortes), qui choisirais-tu et pourquoi ?",
-            'default': "👋 Salut ! Kai Wave, ton compagnon IA ! Questions, réflexions, conseils, discussions... De quoi as-tu envie de parler ? 🤖✨"
-        }
-    }
+    # Récupérer l'utilisateur
+    user = User.query.get(session['user_id'])
+    if not user:
+        return jsonify({'success': False, 'message': 'Utilisateur non trouvé'})
     
-    # Génération de réponse intelligente
-    message_lower = message.lower()
-    
-    if agent_name in agent_responses:
-        agent_data = agent_responses[agent_name]
-        
-        # Chercher des mots-clés
-        for keyword, response in agent_data.items():
-            if keyword != 'default' and keyword in message_lower:
-                ai_response = response
-                break
-        else:
-            ai_response = agent_data['default']
-    else:
-        ai_response = "Je suis là pour vous aider !"
-    
-    # Sauvegarder la conversation
     try:
-        user = User.query.get(session['user_id'])
+        # 🚀 SYSTÈME IA UNIVERSEL INTÉGRÉ !
+        # Récupération des clés API utilisateur depuis la session (si configurées)
+        user_api_keys = session.get('user_api_keys', {})
+        
+        # Génération de la réponse IA avec le système complet
+        ai_response = universal_ai.get_ai_response(
+            agent_name=agent_name,
+            user_message=message,
+            user_name=user.name,
+            user_api_keys=user_api_keys if user_api_keys else None
+        )
+        
+        # Déterminer la source IA utilisée
+        ai_source = "Système IA Hybride"
+        if ai_response.startswith('🔥'):
+            ai_source = "API Premium"
+        elif ai_response.startswith('🤖'):
+            ai_source = "Hugging Face (Gratuit)"
+        elif ai_response.startswith('🖥️'):
+            ai_source = "Ollama Local"
+        else:
+            ai_source = "Fallback Intelligent"
+        
+        # Nettoyer le préfixe émoji pour l'affichage
+        display_response = ai_response[2:] if ai_response.startswith(('🔥', '🤖', '🖥️')) else ai_response
+        
+        # Sauvegarder la conversation
         chat_msg = ChatMessage(
             user_id=user.id,
             agent_name=agent_name, 
             message=message,
-            response=ai_response
+            response=display_response
         )
         db.session.add(chat_msg)
         db.session.commit()
-    except:
-        pass
+        
+        return jsonify({
+            'success': True,
+            'response': display_response,
+            'agent_name': agent_name,
+            'timestamp': datetime.now().strftime('%H:%M'),
+            'ai_source': ai_source,
+            'model_info': '🧠 IA Avancée Intégrée'
+        })
+        
+    except Exception as e:
+        print(f"Erreur système IA: {e}")
+        
+        # Fallback gracieux en cas d'erreur système
+        fallback_response = universal_ai.get_intelligent_fallback(agent_name, message)
+        
+        try:
+            chat_msg = ChatMessage(
+                user_id=user.id,
+                agent_name=agent_name, 
+                message=message,
+                response=fallback_response
+            )
+            db.session.add(chat_msg)
+            db.session.commit()
+        except:
+            pass
+        
+        return jsonify({
+            'success': True,
+            'response': fallback_response,
+            'agent_name': agent_name,
+            'timestamp': datetime.now().strftime('%H:%M'),
+            'ai_source': 'Fallback Sécurisé',
+            'model_info': '🛡️ Mode Dégradé'
+        })
+
+# API pour la configuration IA
+@app.route('/api/ai/settings', methods=['GET', 'POST'])
+def ai_settings_api():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'Non authentifié'})
     
-    return jsonify({
-        'success': True,
-        'response': ai_response,
-        'agent_name': agent_name,
-        'timestamp': datetime.now().strftime('%H:%M')
-    })
+    if request.method == 'GET':
+        # Récupérer les paramètres existants
+        settings = session.get('user_ai_settings', {})
+        # Ne pas renvoyer les clés complètes pour sécurité
+        safe_settings = {
+            'hf_token': '***' if settings.get('hf_token') else '',
+            'ollama_url': settings.get('ollama_url', 'http://localhost:11434'),
+            'openai_key': '***' if settings.get('openai_key') else '',
+            'anthropic_key': '***' if settings.get('anthropic_key') else ''
+        }
+        return jsonify({'success': True, 'settings': safe_settings})
+    
+    else:  # POST
+        data = request.get_json()
+        
+        # Sauvegarder les paramètres en session (plus sécurisé qu'en base)
+        user_settings = {}
+        user_api_keys = {}
+        
+        if data.get('hf_token'):
+            user_settings['hf_token'] = data['hf_token']
+            # Mettre à jour l'instance globale
+            universal_ai.hf_api_key = data['hf_token']
+        
+        if data.get('ollama_url'):
+            user_settings['ollama_url'] = data['ollama_url']
+            universal_ai.ollama_url = data['ollama_url']
+        
+        if data.get('openai_key'):
+            user_settings['openai_key'] = data['openai_key']
+            user_api_keys['openai_key'] = data['openai_key']
+        
+        if data.get('anthropic_key'):
+            user_settings['anthropic_key'] = data['anthropic_key']
+            user_api_keys['anthropic_key'] = data['anthropic_key']
+        
+        # Sauvegarder en session
+        session['user_ai_settings'] = user_settings
+        session['user_api_keys'] = user_api_keys
+        
+        return jsonify({'success': True, 'message': 'Configuration IA sauvegardée avec succès !'})
+
+# API pour tester le système IA
+@app.route('/api/ai/test', methods=['POST'])
+def ai_test():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'Non authentifié'})
+    
+    data = request.get_json()
+    test_message = data.get('message', 'Test de fonctionnement du système IA')
+    
+    user = User.query.get(session['user_id'])
+    user_api_keys = session.get('user_api_keys', {})
+    
+    try:
+        # Test avec Kai (agent conversationnel)
+        response = universal_ai.get_ai_response(
+            agent_name='kai',
+            user_message=test_message,
+            user_name=user.name,
+            user_api_keys=user_api_keys if user_api_keys else None
+        )
+        
+        # Déterminer la source
+        if response.startswith('🔥'):
+            source = "API Premium Utilisateur"
+        elif response.startswith('🤖'):
+            source = "Hugging Face (Gratuit)"
+        elif response.startswith('🖥️'):
+            source = "Ollama Local"
+        else:
+            source = "Fallback Intelligent"
+        
+        clean_response = response[2:] if response.startswith(('🔥', '🤖', '🖥️')) else response
+        
+        return jsonify({
+            'success': True,
+            'response': clean_response[:100] + "..." if len(clean_response) > 100 else clean_response,
+            'ai_source': source,
+            'full_response_length': len(clean_response)
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Erreur de test IA: {str(e)}'
+        })
 
 @app.route('/api/user/stats')
 def user_stats():
@@ -551,11 +658,11 @@ def user_stats():
 def test():
     return jsonify({
         'status': 'success', 
-        'message': 'WaveAI Platform V2.1 - 5 Agents Opérationnels !', 
-        'version': '2.1',
-        'features': ['Design Moderne', 'Auth Multi-users', 'IA Conversationnelle', 'Chat Temps Réel'],
+        'message': 'WaveAI Platform V3.0 - IA Universelle Intégrée !', 
+        'version': '3.0',
+        'features': ['IA Hybride', 'Hugging Face', 'Ollama Local', 'APIs Premium', '5 Agents Spécialisés', 'Configuration Utilisateur'],
         'agents': ['Alex Wave', 'Lina Wave', 'Marco Wave', 'Sofia Wave', 'Kai Wave'],
-        'new_features': ['Kai Wave - Assistant Conversationnel', 'Suggestions Personnalisées', 'Interface Améliorée']
+        'ai_sources': ['Hugging Face (Gratuit)', 'Ollama Local', 'OpenAI Premium', 'Anthropic Premium', 'Fallback Intelligent']
     })
 
 # Initialisation
@@ -564,3 +671,4 @@ with app.app_context():
 
 if __name__ == '__main__':
     app.run(debug=False)
+
