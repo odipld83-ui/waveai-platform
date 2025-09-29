@@ -1,7 +1,51 @@
+# WaveAI - Dépendances Complètes Réparées
+# Toutes les fonctionnalités avancées avec versions stables
+
+# Framework web principal
 Flask==2.3.3
+Werkzeug==2.3.7
+
+# Base de données et migrations
 Flask-SQLAlchemy==3.0.5
-gunicorn==21.2.0
-python-dotenv==1.0.0
+Flask-Migrate==4.0.5
+SQLAlchemy==2.0.21
+
+# Base de données PostgreSQL pour Render
+psycopg2-binary==2.9.7
+
+# Sécurité et authentification
+Werkzeug==2.3.7
+cryptography==41.0.4
+
+# APIs IA - versions stables et testées
+openai==1.3.8
+anthropic==0.7.8
 requests==2.31.0
-openai==1.3.0
-anthropic==0.7.7
+
+# Utilitaires essentiels
+python-dotenv==1.0.0
+gunicorn==21.2.0
+
+# Validation et emails
+email-validator==2.0.0
+
+# JSON et sérialisation (inclus avec Python mais explicit)
+# json - module standard Python
+
+# Support pour les dates et times
+# datetime - module standard Python
+
+# Regex et pattern matching
+# re - module standard Python
+
+# Secrets et tokens
+# secrets - module standard Python
+
+# SMTP et emails
+# smtplib - module standard Python
+
+# Logging
+# logging - module standard Python
+
+# OS et variables d'environnement
+# os - module standard Python
