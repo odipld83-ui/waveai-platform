@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}Paramètres IA - WaveAI{% endblock %}
+
+{% block nav %}
+<a href="/dashboard" class="btn">← Dashboard</a>
+<span style="opacity: 0.8;">{{ user.name }}</span>
+{% endblock %}
+
+{% block styles %}
+.settings-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.ai-option {
+    background: var(--glass-bg);
+    backdrop-filter: blur(15px);
+    border: 1px solid var(--glass-border);
+    border-radius: 15px;
+    padding: 25px;
+    margin-bottom: 20px;
+}
+
+.ai-option.active {
+    border-color: #4ade80;
+    background: rgba(34, 197, 94, 0.1);
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    background: rgba(255,255,255,0.1);
+    color: white;
+}
+
+.form-group input::placeholder {
+    color: rgba(255,255,255,0.6);
+}
+
+.status-indicator {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+
+.status-active { background: #4ade80; }
+.status-inactive { background: #6b7280; }
+.status-error { background: #ef4444; }
+{% endblock %}
+
+{% block content %}
+<div class="settings-container">
+    <h1 style="text-align: center; margin-bottom: 40px;">⚙️ Configuration IA WaveAI</h1>
+    
+    <div class="ai-option">
+        <h3><span class="status-indicator status-active"></span>🌐 Hugging Face (Gratuit)</h3>
+        <p>IA gratuite Llama-2 et Mistral. Qualité élevée, limites raisonnables.</p>
+        <p><strong>Status :</strong> <span style="color: #4ade80;">✅ Actif par défaut</span></p>
+        
+        <div class="form-group">
+            <label>Token Hugging Face (Optionnel - améliore les limites) :</label>
+            <input type="password" id="hf_token" placeholder="hf_xxxxxxxxxxxx">
+            <small style="opacity: 0.7;">Obtenez votre token gratuit sur huggingface.co</small>
+        </div>
+    </div>
+    
+    <div class="ai-option">
+        <h3><span class="status-indicator status-inactive"></span>🏠 Ollama Local (Offline)</h3>
+        <p>IA locale sur votre serveur. Zéro limite, zéro coût, fonctionne offline.</p>
+        <p><strong>Status :</strong> <span style="color: #6b7280;">⏸️ Non configuré</span></p>
+        
+        <div class="form-group">
+            <label>URL Ollama :</label>
+            <input type="text" id="ollama_url" placeholder="http://localhost:11434" value="http://localhost:11434">
+            <small style="opacity: 0.7;">Installez Ollama sur votre serveur pour l'activer</small>
+        </div>
+    </div>
+    
+    <div class="ai-option">
+        <h3><span class="status-indicator status-inactive"></span>💎 APIs Premium (Votre choix)</h3>
+        <p>Qualité maximale avec vos clés API. Vous contrôlez les coûts.</p>
+        
+        <div class="form-group">
+            <label>🔥 OpenAI API Key :</label>
+            <input type="password" id="openai_key" placeholder="sk-xxxxxxxxxxxx">
+            <small style="opacity: 0.7;">~0.002$/1000 mots - Qualité exceptionnelle</small>
+        </div>
+        
+        <div class="form-group">
+            <label>🧠 Anthropic Claude API Key :</label>
+            <input type="password" id="anthropic_key" placeholder="sk-ant-xxxxxxxxxxxx">
+            <small style="opacity: 0.7;">~0.001$/1000 mots - Très précis</small>
+        </div>
+    </div>
+    
+    <div style="text-align: center; margin-top: 40px;">
+        <button class="btn btn-primary" onclick="saveSettings()" style="font-size: 1.1em; padding: 15px 30px;">
+            💾 Sauvegarder Configuration
+        </button>
+        <button class="btn" onclick="testAI()" style="margin-left: 15px;">
+            🧪 Tester IA
+        </button>
+    </div>
+    
+    <div id="status-message" style="text-align: center; margin-top: 20px;"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function saveSettings() {
+    const settings = {
+        hf_token: document.getElementById('hf_token').value,
+        ollama_url: document.getElementById('ollama_url').value,
+        openai_key: document.getElementById('openai_key').value,
+        anthropic_key: document.getElementById('anthropic_key').value
+    };
+    
+    try {
+        const response = await fetch('/api/ai/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(settings)
+        });
+        
+        const data = await response.json();
+        const statusDiv = document.getElementById('status-message');
+        
+        if (data.success) {
+            statusDiv.innerHTML = '<p style="color: #4ade80;">✅ Configuration sauvegardée !</p>';
+        } else {
+            statusDiv.innerHTML = '<p style="color: #ef4444;">❌ Erreur: ' + data.message + '</p>';
+        }
+    } catch (error) {
+        document.getElementById('status-message').innerHTML = '<p style="color: #ef4444;">❌ Erreur de connexion</p>';
+    }
+}
+
+async function testAI() {
+    const statusDiv = document.getElementById('status-message');
+    statusDiv.innerHTML = '<p style="color: #06b6d4;">🧪 Test en cours...</p>';
+    
+    try {
+        const response = await fetch('/api/ai/test', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: 'Test de fonctionnement IA' })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            statusDiv.innerHTML = `
+                <div style="color: #4ade80;">
+                    <p>✅ Test réussi !</p>
+                    <p><strong>Source IA :</strong> ${data.ai_source}</p>
+                    <p><strong>Réponse :</strong> "${data.response.substring(0, 100)}..."</p>
+                </div>
+            `;
+        } else {
+            statusDiv.innerHTML = '<p style="color: #ef4444;">❌ Test échoué: ' + data.message + '</p>';
+        }
+    } catch (error) {
+        statusDiv.innerHTML = '<p style="color: #ef4444;">❌ Erreur de test</p>';
+    }
+}
+
+// Charger les paramètres existants
+document.addEventListener('DOMContentLoaded', function() {
+    fetch('/api/ai/settings')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.settings) {
+                document.getElementById('hf_token').value = data.settings.hf_token || '';
+                document.getElementById('ollama_url').value = data.settings.ollama_url || 'http://localhost:11434';
+                document.getElementById('openai_key').value = data.settings.openai_key || '';
+                document.getElementById('anthropic_key').value = data.settings.anthropic_key || '';
+            }
+        })
+        .catch(error => console.log('Paramètres par défaut chargés'));
+});
+</script>
+{% endblock %}
