@@ -22,15 +22,11 @@
     </p>
 </div>
 
-<div class="agent-card" onclick="location.href='/agents/kai'">
-    <div class="agent-icon">🤖</div>
-    <div class="agent-name">Kai Wave</div>
-    <div class="agent-desc">
-        <strong>Assistant Conversationnel</strong><br>
-        Votre compagnon IA pour discussions libres, questions générales, 
-        conseils personnels et exploration d'idées.
-    </div>
-    <div class="btn btn-primary">💬 Chatter avec Kai</div>
+<!-- Configuration IA -->
+<div style="text-align: center; margin-bottom: 30px;">
+    <a href="/ai-settings" class="btn" style="background: rgba(16, 185, 129, 0.2); border-color: #10b981;">
+        ⚙️ Configuration IA
+    </a>
 </div>
 
 <div class="agent-grid">
@@ -77,6 +73,17 @@
         </div>
         <div class="btn btn-primary">💬 Chatter avec Sofia</div>
     </div>
+    
+    <div class="agent-card" onclick="location.href='/agents/kai'">
+        <div class="agent-icon">🤖</div>
+        <div class="agent-name">Kai Wave</div>
+        <div class="agent-desc">
+            <strong>Assistant Conversationnel</strong><br>
+            Votre compagnon IA pour discussions libres, questions générales, 
+            conseils personnels et exploration d'idées.
+        </div>
+        <div class="btn btn-primary">💬 Chatter avec Kai</div>
+    </div>
 </div>
 
 <div class="glass" style="text-align: center; margin-top: 50px; background: rgba(255,255,255,0.1);">
@@ -101,7 +108,7 @@ async function loadUserStats() {
                 <p><strong>Dernière connexion :</strong> ${data.user.last_login}</p>
                 <p><strong>Messages envoyés :</strong> ${data.stats.total_messages}</p>
                 <div style="margin-top: 15px;">
-                    <small>Alex: ${data.stats.agents_usage.alex} | Lina: ${data.stats.agents_usage.lina} | Marco: ${data.stats.agents_usage.marco} | Sofia: ${data.stats.agents_usage.sofia}</small>
+                    <small>Alex: ${data.stats.agents_usage.alex} | Lina: ${data.stats.agents_usage.lina} | Marco: ${data.stats.agents_usage.marco} | Sofia: ${data.stats.agents_usage.sofia} | Kai: ${data.stats.agents_usage.kai}</small>
                 </div>
             `;
             document.getElementById('userStats').innerHTML = statsHtml;
@@ -137,3 +144,4 @@ document.querySelectorAll('.agent-card').forEach((card, index) => {
 });
 </script>
 {% endblock %}
+
