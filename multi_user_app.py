@@ -1,3 +1,88 @@
+# Ajoutez cet import en haut du fichier
+from ai_agents import wave_ai
+
+# Remplacez la fonction chat_api existante par celle-ci :
+@app.route('/api/chat/<agent_name>', methods=['POST'])  
+def chat_api(agent_name):
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'Non authentifié'})
+    
+    data = request.get_json()
+    message = data.get('message', '').strip()
+    
+    if not message:
+        return jsonify({'success': False, 'message': 'Message vide'})
+    
+    if len(message) > 1000:
+        return jsonify({'success': False, 'message': 'Message trop long (max 1000 caractères)'})
+    
+    # Récupérer l'utilisateur
+    user = User.query.get(session['user_id'])
+    if not user:
+        return jsonify({'success': False, 'message': 'Utilisateur non trouvé'})
+    
+    # Récupérer l'historique récent pour le contexte
+    recent_history = ChatMessage.query.filter_by(
+        user_id=user.id, 
+        agent_name=agent_name
+    ).order_by(ChatMessage.created_at.desc()).limit(3).all()
+    
+    conversation_context = wave_ai.format_conversation_history(reversed(recent_history))
+    
+    try:
+        # Génération de la réponse IA
+        ai_response = wave_ai.get_ai_response(
+            agent_name=agent_name,
+            user_message=message,
+            user_name=user.name,
+            conversation_history=conversation_context
+        )
+        
+        # Sauvegarder la conversation
+        chat_msg = ChatMessage(
+            user_id=user.id,
+            agent_name=agent_name, 
+            message=message,
+            response=ai_response
+        )
+        db.session.add(chat_msg)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'response': ai_response,
+            'agent_name': agent_name,
+            'timestamp': datetime.now().strftime('%H:%M')
+        })
+        
+    except Exception as e:
+        # Log l'erreur pour debug (en production, utilisez un logger)
+        print(f"Erreur chat IA: {e}")
+        
+        # Fallback sur une réponse d'erreur gracieuse
+        fallback_response = wave_ai.get_intelligent_fallback(agent_name, message)
+        
+        # Sauvegarder même en cas d'erreur IA
+        try:
+            chat_msg = ChatMessage(
+                user_id=user.id,
+                agent_name=agent_name, 
+                message=message,
+                response=fallback_response
+            )
+            db.session.add(chat_msg)
+            db.session.commit()
+        except:
+            pass
+        
+        return jsonify({
+            'success': True,
+            'response': fallback_response,
+            'agent_name': agent_name,
+            'timestamp': datetime.now().strftime('%H:%M'),
+            'fallback': True
+        })
+
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 import os
