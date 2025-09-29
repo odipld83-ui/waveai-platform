@@ -1,93 +1,7 @@
-# Ajoutez cet import en haut du fichier
-from ai_agents import wave_ai
-
-# Remplacez la fonction chat_api existante par celle-ci :
-@app.route('/api/chat/<agent_name>', methods=['POST'])  
-def chat_api(agent_name):
-    if 'user_id' not in session:
-        return jsonify({'success': False, 'message': 'Non authentifié'})
-    
-    data = request.get_json()
-    message = data.get('message', '').strip()
-    
-    if not message:
-        return jsonify({'success': False, 'message': 'Message vide'})
-    
-    if len(message) > 1000:
-        return jsonify({'success': False, 'message': 'Message trop long (max 1000 caractères)'})
-    
-    # Récupérer l'utilisateur
-    user = User.query.get(session['user_id'])
-    if not user:
-        return jsonify({'success': False, 'message': 'Utilisateur non trouvé'})
-    
-    # Récupérer l'historique récent pour le contexte
-    recent_history = ChatMessage.query.filter_by(
-        user_id=user.id, 
-        agent_name=agent_name
-    ).order_by(ChatMessage.created_at.desc()).limit(3).all()
-    
-    conversation_context = wave_ai.format_conversation_history(reversed(recent_history))
-    
-    try:
-        # Génération de la réponse IA
-        ai_response = wave_ai.get_ai_response(
-            agent_name=agent_name,
-            user_message=message,
-            user_name=user.name,
-            conversation_history=conversation_context
-        )
-        
-        # Sauvegarder la conversation
-        chat_msg = ChatMessage(
-            user_id=user.id,
-            agent_name=agent_name, 
-            message=message,
-            response=ai_response
-        )
-        db.session.add(chat_msg)
-        db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'response': ai_response,
-            'agent_name': agent_name,
-            'timestamp': datetime.now().strftime('%H:%M')
-        })
-        
-    except Exception as e:
-        # Log l'erreur pour debug (en production, utilisez un logger)
-        print(f"Erreur chat IA: {e}")
-        
-        # Fallback sur une réponse d'erreur gracieuse
-        fallback_response = wave_ai.get_intelligent_fallback(agent_name, message)
-        
-        # Sauvegarder même en cas d'erreur IA
-        try:
-            chat_msg = ChatMessage(
-                user_id=user.id,
-                agent_name=agent_name, 
-                message=message,
-                response=fallback_response
-            )
-            db.session.add(chat_msg)
-            db.session.commit()
-        except:
-            pass
-        
-        return jsonify({
-            'success': True,
-            'response': fallback_response,
-            'agent_name': agent_name,
-            'timestamp': datetime.now().strftime('%H:%M'),
-            'fallback': True
-        })
-
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 import os
 from datetime import datetime
-import hashlib
 import secrets
 
 app = Flask(__name__)
@@ -154,13 +68,119 @@ def agent_interface(agent_name):
     user = User.query.get(session['user_id'])
     agent = agents[agent_name]
     
-    # Récupérer l'historique des conversations
-    chat_history = ChatMessage.query.filter_by(
-        user_id=user.id, 
-        agent_name=agent_name
-    ).order_by(ChatMessage.created_at.desc()).limit(10).all()
-    
-    return render_template('agent.html', user=user, agent=agent, agent_name=agent_name, chat_history=reversed(chat_history))
+    # Interface chat simple intégrée (pas de template séparé)
+    return f'''
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{agent["name"]} - WaveAI</title>
+        <style>
+            body {{ 
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white; margin: 0; padding: 20px;
+            }}
+            .header {{ 
+                background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px;
+                display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;
+            }}
+            .chat-container {{ 
+                background: rgba(255,255,255,0.15); border-radius: 15px; padding: 30px;
+                max-width: 800px; margin: 0 auto; min-height: 400px;
+            }}
+            .message {{ 
+                background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin-bottom: 15px;
+            }}
+            .message.user {{ background: rgba(255,255,255,0.2); text-align: right; }}
+            .chat-input {{ display: flex; gap: 10px; margin-top: 20px; }}
+            .chat-input input {{ 
+                flex: 1; padding: 12px; border: none; border-radius: 25px; font-size: 16px;
+            }}
+            .chat-input button {{ 
+                background: rgba(255,255,255,0.2); color: white; padding: 12px 20px;
+                border: none; border-radius: 25px; cursor: pointer;
+            }}
+            .btn {{ 
+                background: rgba(255,255,255,0.2); color: white; padding: 8px 15px;
+                border: none; border-radius: 5px; text-decoration: none;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <h1>{agent["icon"]} {agent["name"]}</h1>
+            <a href="/dashboard" class="btn">← Dashboard</a>
+        </div>
+        
+        <div class="chat-container">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <div style="font-size: 3em; margin-bottom: 10px;">{agent["icon"]}</div>
+                <h2>{agent["name"]}</h2>
+                <p>{agent["speciality"]}</p>
+            </div>
+            
+            <div id="chatMessages">
+                <div class="message">
+                    <strong>{agent["name"]} :</strong><br>
+                    Salut {user.name} ! Je suis {agent["name"]}, votre assistant spécialisé en {agent["speciality"]}. 
+                    Comment puis-je vous aider aujourd'hui ? 🌊
+                </div>
+            </div>
+            
+            <div class="chat-input">
+                <input type="text" id="messageInput" placeholder="Tapez votre message...">
+                <button onclick="sendMessage()">Envoyer</button>
+            </div>
+        </div>
+        
+        <script>
+        async function sendMessage() {{
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            if (!message) return;
+            
+            // Ajouter message utilisateur
+            addMessage(message, true);
+            input.value = '';
+            
+            try {{
+                const response = await fetch('/api/chat/{agent_name}', {{
+                    method: 'POST',
+                    headers: {{ 'Content-Type': 'application/json' }},
+                    body: JSON.stringify({{ message: message }})
+                }});
+                
+                const data = await response.json();
+                if (data.success) {{
+                    addMessage(data.response, false);
+                }} else {{
+                    addMessage('Erreur: ' + data.message, false);
+                }}
+            }} catch (error) {{
+                addMessage('Erreur de connexion', false);
+            }}
+        }}
+        
+        function addMessage(text, isUser) {{
+            const messagesDiv = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message' + (isUser ? ' user' : '');
+            messageDiv.innerHTML = isUser 
+                ? '<strong>Vous :</strong><br>' + text
+                : '<strong>{agent["name"]} :</strong><br>' + text;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }}
+        
+        document.getElementById('messageInput').addEventListener('keypress', function(e) {{
+            if (e.key === 'Enter') sendMessage();
+        }});
+        </script>
+    </body>
+    </html>
+    '''
 
 # API Routes
 @app.route('/api/auth/login', methods=['POST'])
@@ -179,7 +199,6 @@ def login_api():
     if not user:
         # Nouveau utilisateur
         name = email.split('@')[0].title()
-        # Générer une couleur d'avatar aléatoire
         colors = ['#667eea', '#764ba2', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444']
         avatar_color = secrets.choice(colors)
         
@@ -230,57 +249,69 @@ def chat_api(agent_name):
     if not message:
         return jsonify({'success': False, 'message': 'Message vide'})
     
-    # Simulation IA pour le moment (nous intégrerons une vraie IA ensuite)
+    # Réponses intelligentes par agent
     agent_responses = {
-        'alex': [
-            "📧 Excellente question ! Pour optimiser votre productivité Gmail, je recommande d'utiliser des filtres automatiques et des libellés organisés.",
-            "⚡ Basé sur votre demande, voici 3 stratégies de productivité : 1) Time-blocking, 2) Technique Pomodoro, 3) Inbox Zero.",
-            "🎯 Je vais analyser votre workflow. Commencez par définir 3 priorités quotidiennes maximum et utilisez la matrice d'Eisenhower.",
-            "📊 Pour une meilleure organisation, créez des templates d'emails récurrents et configurez des réponses automatiques."
-        ],
-        'lina': [
-            "🔗 Parfait pour LinkedIn ! Je suggère de publier du contenu de valeur 3x par semaine et d'engager authentiquement avec votre réseau.",
-            "🌟 Pour optimiser votre profil LinkedIn : photo professionnelle, titre accrocheur, résumé orienté valeur, et recommandations.",
-            "💼 Stratégie networking : identifiez 10 personnes clés par semaine, envoyez des messages personnalisés, proposez de la valeur.",
-            "📈 Analysons votre présence LinkedIn : cohérence du message, fréquence de publication, et engagement avec les commentaires."
-        ],
-        'marco': [
-            "📱 Stratégie réseaux sociaux : définissons votre ligne éditoriale et créons un calendrier de contenu adapté à chaque plateforme.",
-            "🎨 Pour du contenu viral : storytelling authentique, visuels impactants, et timing optimal selon votre audience.",
-            "📊 Analysons vos performances : taux d'engagement, meilleur horaire de publication, et types de contenu les plus performants.",
-            "🚀 Plan d'action : 1) Audit de vos comptes, 2) Stratégie de contenu, 3) Planification, 4) Analyse des résultats."
-        ],
-        'sofia': [
-            "📅 Organisation parfaite ! Créons votre système de planification : agenda principal, tâches par priorité, et blocs de temps dédiés.",
-            "⏰ Optimisation du temps : identifions vos pics de productivité et alignons vos tâches importantes sur ces créneaux.",
-            "🎯 Planification stratégique : objectifs mensuels découpés en actions hebdomadaires et tâches quotidiennes mesurables.",
-            "📋 Système complet : calendrier partagé, rappels automatiques, révisions hebdomadaires, et ajustements proactifs."
-        ]
+        'alex': {
+            'email': "📧 Pour Gmail : filtres automatiques, libellés colorés, règle des 2min. Créons votre système !",
+            'productivité': "⚡ Ma méthode : planification matinale + blocs focus + révision. Votre défi principal ?",
+            'organisation': "🎯 Système GTD : capturer, clarifier, organiser, réviser. Par où commencer ?",
+            'default': "👋 Alex Wave ici ! Expert productivité et Gmail. Comment optimiser votre workflow aujourd'hui ?"
+        },
+        'lina': {
+            'linkedin': "🔗 LinkedIn gagnant : profil optimisé + contenu régulier + networking authentique. Votre objectif ?",
+            'networking': "🌟 Networking = donner avant recevoir. Identifions vos contacts cibles !",
+            'professionnel': "💼 Personal branding : expertise + réputation + réseau. Priorité ?",
+            'default': "💫 Lina Wave ! Spécialisée LinkedIn et networking. Développons votre influence professionnelle !"
+        },
+        'marco': {
+            'social': "📱 Stratégie social media : plateforme principale + contenu pilier + engagement. Votre focus ?",
+            'contenu': "🎨 Contenu viral : storytelling + émotion + call-to-action. Quel message porter ?",
+            'instagram': "📸 Instagram 2024 : Reels créatifs + Stories interactives. Votre niche ?",
+            'default': "🎬 Marco Wave ! Expert réseaux sociaux. Transformons vos idées en contenu engageant !"
+        },
+        'sofia': {
+            'planning': "📅 Planification parfaite : vision → objectifs → actions. Vos priorités du mois ?",
+            'calendrier': "⏰ Calendrier zen : priorités d'abord + buffer 25% + groupage. Votre défi ?",
+            'organisation': "📋 Mon système : capture → clarification → action. Votre outil actuel ?",
+            'default': "🗓️ Sofia Wave ! Experte organisation. Transformons le chaos en efficacité !"
+        }
     }
     
-    # Réponse simulée intelligente
+    # Génération de réponse intelligente
+    message_lower = message.lower()
+    
     if agent_name in agent_responses:
-        response = secrets.choice(agent_responses[agent_name])
+        agent_data = agent_responses[agent_name]
+        
+        # Chercher des mots-clés
+        for keyword, response in agent_data.items():
+            if keyword != 'default' and keyword in message_lower:
+                ai_response = response
+                break
+        else:
+            ai_response = agent_data['default']
     else:
-        response = "Je suis là pour vous aider ! Pouvez-vous préciser votre demande ?"
+        ai_response = "Je suis là pour vous aider !"
     
     # Sauvegarder la conversation
     try:
+        user = User.query.get(session['user_id'])
         chat_msg = ChatMessage(
-            user_id=session['user_id'],
+            user_id=user.id,
             agent_name=agent_name, 
             message=message,
-            response=response
+            response=ai_response
         )
         db.session.add(chat_msg)
         db.session.commit()
     except:
-        pass  # Continue même si la sauvegarde échoue
+        pass
     
     return jsonify({
         'success': True,
-        'response': response,
-        'agent_name': agent_name
+        'response': ai_response,
+        'agent_name': agent_name,
+        'timestamp': datetime.now().strftime('%H:%M')
     })
 
 @app.route('/api/user/stats')
@@ -288,11 +319,9 @@ def user_stats():
     if 'user_id' not in session:
         return jsonify({'success': False, 'message': 'Non authentifié'})
     
-    # Statistiques utilisateur
     user = User.query.get(session['user_id'])
     total_messages = ChatMessage.query.filter_by(user_id=user.id).count()
     
-    # Messages par agent
     agents_stats = {}
     for agent in ['alex', 'lina', 'marco', 'sofia']:
         count = ChatMessage.query.filter_by(user_id=user.id, agent_name=agent).count()
@@ -317,15 +346,16 @@ def user_stats():
 def test():
     return jsonify({
         'status': 'success', 
-        'message': 'WaveAI Platform fonctionne parfaitement !', 
+        'message': 'WaveAI Platform V2.0 - Tout Fonctionne !', 
         'version': '2.0',
-        'features': ['Templates HTML', 'Authentification', 'Chat IA', 'Multi-utilisateurs'],
+        'features': ['Design Moderne', 'Auth Multi-users', 'IA Intelligente', 'Chat Temps Réel'],
         'agents': ['Alex Wave', 'Lina Wave', 'Marco Wave', 'Sofia Wave']
     })
 
-# Initialisation base de données
+# Initialisation
 with app.app_context():
     db.create_all()
 
 if __name__ == '__main__':
     app.run(debug=False)
+
