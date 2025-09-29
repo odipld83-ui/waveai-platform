@@ -1,10 +1,2 @@
 Flask==2.3.3
-Flask-SQLAlchemy==3.0.5
-Flask-SocketIO==5.3.6
-python-socketio==5.8.0
-python-engineio==4.7.1
-psycopg2-binary==2.9.7
 gunicorn==21.2.0
-python-dotenv==1.0.0
-sendgrid==6.10.0
-Werkzeug==2.3.7
