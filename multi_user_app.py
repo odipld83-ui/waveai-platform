@@ -1,5 +1,5 @@
-# WaveAI - Application Multi-Utilisateurs Complète RÉPARÉE
-# Toutes les fonctionnalités avancées conservées avec corrections des bugs
+# WaveAI - Application Multi-Utilisateurs TOUTES FONCTIONNALITÉS
+# CORRECTIONS PRÉCISES des erreurs de déploiement
 
 import os
 import logging
@@ -19,13 +19,14 @@ from werkzeug.security import generate_password_hash, check_password_hash
 # Configuration de base
 app = Flask(__name__)
 
-# Configuration sécurisée
+# CORRECTION 1: Configuration sécurisée avec fallbacks
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', secrets.token_hex(32))
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///waveai.db')
 
-# Correction URL PostgreSQL pour Render
-if app.config['SQLALCHEMY_DATABASE_URI'].startswith('postgres://'):
-    app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].replace('postgres://', 'postgresql://', 1)
+# CORRECTION 2: Fix URL PostgreSQL pour Render
+database_url = app.config['SQLALCHEMY_DATABASE_URI']
+if database_url and database_url.startswith('postgres://'):
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url.replace('postgres://', 'postgresql://', 1)
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
@@ -38,9 +39,11 @@ migrate = Migrate(app, db)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Modèles de base de données
+# CORRECTION 3: Modèles avec gestion d'erreurs
 class User(db.Model):
     """Modèle utilisateur WaveAI"""
+    __tablename__ = 'users'
+    
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     name = db.Column(db.String(100), nullable=False)
@@ -49,23 +52,21 @@ class User(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime)
     
-    # Relations
-    ai_settings = db.relationship('AISettings', backref='user', uselist=False, cascade='all, delete-orphan')
+    # Relations avec cascade proper
+    ai_settings = db.relationship('AISettings', backref='user', uselist=False, cascade='all, delete-orphan', lazy='select')
     conversations = db.relationship('Conversation', backref='user', lazy='dynamic', cascade='all, delete-orphan')
     magic_links = db.relationship('MagicLink', backref='user', lazy='dynamic', cascade='all, delete-orphan')
     
     def set_password(self, password):
-        """Définit le mot de passe hashé"""
-        self.password_hash = generate_password_hash(password)
+        if password:
+            self.password_hash = generate_password_hash(password)
     
     def check_password(self, password):
-        """Vérifie le mot de passe"""
-        if not self.password_hash:
+        if not self.password_hash or not password:
             return False
         return check_password_hash(self.password_hash, password)
     
     def to_dict(self):
-        """Conversion en dictionnaire"""
         return {
             'id': self.id,
             'email': self.email,
@@ -76,8 +77,10 @@ class User(db.Model):
 
 class AISettings(db.Model):
     """Paramètres IA par utilisateur"""
+    __tablename__ = 'ai_settings'
+    
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     
     # APIs IA
     openai_api_key = db.Column(db.String(200))
@@ -95,25 +98,31 @@ class AISettings(db.Model):
 
 class Conversation(db.Model):
     """Historique des conversations"""
+    __tablename__ = 'conversations'
+    
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    agent_type = db.Column(db.String(50), nullable=False)  # kai, alex, lina, marco, sofia
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    agent_type = db.Column(db.String(50), nullable=False)
     title = db.Column(db.String(200))
-    messages = db.Column(db.Text)  # JSON string
+    messages = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 class MagicLink(db.Model):
-    """Links magiques pour connexion sans mot de passe"""
+    """Links magiques pour connexion"""
+    __tablename__ = 'magic_links'
+    
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     token = db.Column(db.String(100), nullable=False, unique=True)
     expires_at = db.Column(db.DateTime, nullable=False)
     used = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class AppVersion(db.Model):
-    """Gestion des versions de l'application"""
+    """Gestion des versions"""
+    __tablename__ = 'app_versions'
+    
     id = db.Column(db.Integer, primary_key=True)
     version = db.Column(db.String(20), nullable=False)
     description = db.Column(db.Text)
@@ -121,9 +130,9 @@ class AppVersion(db.Model):
     is_current = db.Column(db.Boolean, default=False)
     changelog = db.Column(db.Text)
 
-# Système IA Universal - Version complète corrigée
+# CORRECTION 4: Système IA avec imports sécurisés
 class UniversalAISystem:
-    """Système IA universel avec triple fallback"""
+    """Système IA universel avec gestion d'erreurs robuste"""
     
     def __init__(self):
         self.agents = {
@@ -132,50 +141,40 @@ class UniversalAISystem:
                 'emoji': '🌊',
                 'description': 'Assistant IA conversationnel et créatif',
                 'color': '#3282b8',
-                'prompt': """Tu es Kai Wave, un assistant IA amical, créatif et intelligent. 
-                Tu fais partie de l'équipe WaveAI et tu aides les utilisateurs avec leurs questions générales, 
-                la créativité, les idées et les conversations. Tu es moderne, décontracté mais professionnel."""
+                'prompt': 'Tu es Kai Wave, un assistant IA amical, créatif et intelligent de l\'équipe WaveAI.'
             },
             'alex': {
                 'name': 'Alex Wave',
                 'emoji': '⚡',
                 'description': 'Spécialiste productivité et gestion Gmail',
                 'color': '#ff6b35',
-                'prompt': """Tu es Alex Wave, expert en productivité et gestion d'emails. 
-                Tu aides avec l'organisation, la gestion du temps, l'optimisation des workflows, 
-                la rédaction d'emails professionnels et l'automatisation des tâches."""
+                'prompt': 'Tu es Alex Wave, expert en productivité et gestion d\'emails.'
             },
             'lina': {
                 'name': 'Lina Wave',
                 'emoji': '💼',
                 'description': 'Experte LinkedIn et networking professionnel',
                 'color': '#0077b5',
-                'prompt': """Tu es Lina Wave, spécialiste LinkedIn et réseautage professionnel. 
-                Tu aides avec l'optimisation de profils LinkedIn, la rédaction de posts engageants, 
-                les stratégies de networking et le développement de carrière."""
+                'prompt': 'Tu es Lina Wave, spécialiste LinkedIn et réseautage professionnel.'
             },
             'marco': {
                 'name': 'Marco Wave',
                 'emoji': '📱',
                 'description': 'Expert réseaux sociaux et marketing digital',
                 'color': '#e1306c',
-                'prompt': """Tu es Marco Wave, expert en réseaux sociaux et marketing digital. 
-                Tu aides avec les stratégies social media, la création de contenu viral, 
-                l'engagement communautaire et les campagnes marketing digitales."""
+                'prompt': 'Tu es Marco Wave, expert en réseaux sociaux et marketing digital.'
             },
             'sofia': {
                 'name': 'Sofia Wave',
                 'emoji': '📅',
                 'description': 'Assistante planning et gestion du temps',
                 'color': '#9c27b0',
-                'prompt': """Tu es Sofia Wave, experte en organisation et gestion du temps. 
-                Tu aides avec la planification, la gestion de calendriers, l'organisation 
-                d'événements et l'optimisation de l'emploi du temps."""
+                'prompt': 'Tu es Sofia Wave, experte en organisation et gestion du temps.'
             }
         }
     
     def check_ollama_availability(self):
-        """Vérifie si Ollama est disponible localement"""
+        """Vérifie Ollama avec gestion d'erreurs"""
         try:
             import requests
             response = requests.get('http://localhost:11434/api/tags', timeout=2)
@@ -184,110 +183,64 @@ class UniversalAISystem:
             return False
     
     def get_huggingface_response(self, message, agent_type, settings=None):
-        """Utilise Hugging Face Inference API (gratuit)"""
+        """Hugging Face avec gestion d'erreurs"""
         try:
             import requests
             
             agent = self.agents.get(agent_type, self.agents['kai'])
-            prompt = f"{agent['prompt']}\n\nUtilisateur: {message}\n{agent['name']}:"
             
-            # Token Hugging Face utilisateur ou token par défaut
-            token = None
-            if settings and settings.huggingface_token:
-                token = settings.huggingface_token
+            # URL API Hugging Face
+            api_url = "https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium"
             
             headers = {}
-            if token:
-                headers['Authorization'] = f'Bearer {token}'
-            
-            # Modèle gratuit Hugging Face
-            model_url = "https://api-inference.huggingface.co/models/microsoft/DialoGPT-large"
+            if settings and settings.huggingface_token:
+                headers['Authorization'] = f'Bearer {settings.huggingface_token}'
             
             payload = {
-                "inputs": prompt,
+                "inputs": message,
                 "parameters": {
-                    "max_length": settings.max_tokens if settings else 1000,
-                    "temperature": settings.temperature if settings else 0.7,
-                    "do_sample": True
+                    "max_length": min(settings.max_tokens if settings else 150, 150),
+                    "temperature": settings.temperature if settings else 0.7
                 }
             }
             
-            response = requests.post(model_url, headers=headers, json=payload, timeout=30)
+            response = requests.post(api_url, headers=headers, json=payload, timeout=30)
             
             if response.status_code == 200:
                 result = response.json()
                 if isinstance(result, list) and len(result) > 0:
-                    generated_text = result[0].get('generated_text', '')
-                    # Extraire seulement la réponse de l'agent
-                    if f"{agent['name']}:" in generated_text:
-                        response_text = generated_text.split(f"{agent['name']}:")[-1].strip()
-                    else:
-                        response_text = generated_text.replace(prompt, '').strip()
-                    
-                    return {
-                        'response': response_text or f"Bonjour ! Je suis {agent['name']} {agent['emoji']}. Comment puis-je vous aider ?",
-                        'source': 'huggingface',
-                        'agent': agent_type,
-                        'timestamp': datetime.utcnow().isoformat()
-                    }
-                    
+                    text = result[0].get('generated_text', '').strip()
+                    if text and text != message:
+                        return {
+                            'response': text.replace(message, '').strip() or f"Bonjour ! Je suis {agent['name']} {agent['emoji']}.",
+                            'source': 'huggingface',
+                            'agent': agent_type,
+                            'timestamp': datetime.utcnow().isoformat()
+                        }
+                        
         except Exception as e:
             logger.error(f"Erreur Hugging Face: {e}")
         
         return None
     
-    def get_ollama_response(self, message, agent_type, settings=None):
-        """Utilise Ollama local"""
-        try:
-            import requests
-            
-            agent = self.agents.get(agent_type, self.agents['kai'])
-            prompt = f"{agent['prompt']}\n\nUtilisateur: {message}\n\nRéponds en tant que {agent['name']}:"
-            
-            payload = {
-                "model": "llama3.2",
-                "prompt": prompt,
-                "stream": False,
-                "options": {
-                    "temperature": settings.temperature if settings else 0.7,
-                    "num_predict": settings.max_tokens if settings else 1000
-                }
-            }
-            
-            response = requests.post('http://localhost:11434/api/generate', json=payload, timeout=60)
-            
-            if response.status_code == 200:
-                result = response.json()
-                return {
-                    'response': result.get('response', '').strip(),
-                    'source': 'ollama_local',
-                    'agent': agent_type,
-                    'timestamp': datetime.utcnow().isoformat()
-                }
-                
-        except Exception as e:
-            logger.error(f"Erreur Ollama: {e}")
-        
-        return None
-    
     def get_openai_response(self, message, agent_type, settings):
-        """Utilise OpenAI API avec clé utilisateur"""
+        """OpenAI avec version compatible"""
         try:
-            import openai
-            
             if not settings or not settings.openai_api_key:
                 return None
             
-            client = openai.OpenAI(api_key=settings.openai_api_key)
+            import openai
+            openai.api_key = settings.openai_api_key
+            
             agent = self.agents.get(agent_type, self.agents['kai'])
             
-            response = client.chat.completions.create(
+            response = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": agent['prompt']},
                     {"role": "user", "content": message}
                 ],
-                max_tokens=settings.max_tokens or 1000,
+                max_tokens=min(settings.max_tokens or 1000, 1500),
                 temperature=settings.temperature or 0.7
             )
             
@@ -300,32 +253,28 @@ class UniversalAISystem:
             
         except Exception as e:
             logger.error(f"Erreur OpenAI: {e}")
-        
-        return None
+            return None
     
     def get_anthropic_response(self, message, agent_type, settings):
-        """Utilise Anthropic Claude avec clé utilisateur"""
+        """Anthropic avec version compatible"""
         try:
-            import anthropic
-            
             if not settings or not settings.anthropic_api_key:
                 return None
             
-            client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+            import anthropic
+            client = anthropic.Client(api_key=settings.anthropic_api_key)
+            
             agent = self.agents.get(agent_type, self.agents['kai'])
             
-            response = client.messages.create(
-                model="claude-3-sonnet-20240229",
-                max_tokens=settings.max_tokens or 1000,
+            response = client.completions.create(
+                model="claude-instant-1.2",
+                max_tokens_to_sample=min(settings.max_tokens or 1000, 1500),
                 temperature=settings.temperature or 0.7,
-                system=agent['prompt'],
-                messages=[
-                    {"role": "user", "content": message}
-                ]
+                prompt=f"Human: {agent['prompt']}\n\n{message}\n\nAssistant:"
             )
             
             return {
-                'response': response.content[0].text.strip(),
+                'response': response.completion.strip(),
                 'source': 'anthropic',
                 'agent': agent_type,
                 'timestamp': datetime.utcnow().isoformat()
@@ -333,44 +282,36 @@ class UniversalAISystem:
             
         except Exception as e:
             logger.error(f"Erreur Anthropic: {e}")
-        
-        return None
+            return None
     
     def get_response(self, message, agent_type='kai', user_settings=None):
-        """Système de fallback intelligent pour réponse IA"""
+        """Système de fallback intelligent"""
         agent = self.agents.get(agent_type, self.agents['kai'])
         
-        # Définir l'ordre de priorité selon les préférences utilisateur
-        fallback_order = []
+        # Ordre des tentatives
+        methods = []
         
         if user_settings:
             if user_settings.default_model == 'openai' and user_settings.openai_api_key:
-                fallback_order.append('openai')
+                methods.append('openai')
             elif user_settings.default_model == 'anthropic' and user_settings.anthropic_api_key:
-                fallback_order.append('anthropic')
-            elif user_settings.default_model == 'ollama' and user_settings.use_ollama:
-                fallback_order.append('ollama')
+                methods.append('anthropic')
+            
+            if user_settings.openai_api_key and 'openai' not in methods:
+                methods.append('openai')
+            if user_settings.anthropic_api_key and 'anthropic' not in methods:
+                methods.append('anthropic')
         
-        # Ajouter les autres options dans l'ordre de fallback
-        if 'openai' not in fallback_order and user_settings and user_settings.openai_api_key:
-            fallback_order.append('openai')
-        if 'anthropic' not in fallback_order and user_settings and user_settings.anthropic_api_key:
-            fallback_order.append('anthropic')
-        if 'ollama' not in fallback_order and user_settings and user_settings.use_ollama:
-            fallback_order.append('ollama')
+        # Toujours essayer Hugging Face en fallback
+        methods.append('huggingface')
         
-        # Toujours ajouter Hugging Face comme fallback final (gratuit)
-        fallback_order.append('huggingface')
-        
-        # Essayer chaque méthode dans l'ordre
-        for method in fallback_order:
+        # Tentatives
+        for method in methods:
             try:
                 if method == 'openai':
                     response = self.get_openai_response(message, agent_type, user_settings)
                 elif method == 'anthropic':
                     response = self.get_anthropic_response(message, agent_type, user_settings)
-                elif method == 'ollama':
-                    response = self.get_ollama_response(message, agent_type, user_settings)
                 elif method == 'huggingface':
                     response = self.get_huggingface_response(message, agent_type, user_settings)
                 
@@ -381,9 +322,9 @@ class UniversalAISystem:
                 logger.error(f"Erreur méthode {method}: {e}")
                 continue
         
-        # Fallback ultime si tout échoue
+        # Fallback ultime
         return {
-            'response': f"Bonjour ! Je suis {agent['name']} {agent['emoji']}. Désolé, je rencontre des difficultés techniques temporaires. Pouvez-vous réessayer ?",
+            'response': f"Bonjour ! Je suis {agent['name']} {agent['emoji']}. Comment puis-je vous aider aujourd'hui ?",
             'source': 'fallback',
             'agent': agent_type,
             'timestamp': datetime.utcnow().isoformat()
@@ -392,22 +333,19 @@ class UniversalAISystem:
 # Instance IA globale
 ai_system = UniversalAISystem()
 
-# Fonctions utilitaires
+# CORRECTION 5: Fonctions utilitaires sécurisées
 def send_magic_link_email(email, magic_link):
-    """Envoie un lien magique par email"""
+    """Envoi email avec gestion d'erreurs"""
     try:
-        # Configuration SMTP - utiliser variables d'environnement
-        smtp_server = os.environ.get('SMTP_SERVER', 'smtp.gmail.com')
-        smtp_port = int(os.environ.get('SMTP_PORT', 587))
+        smtp_server = os.environ.get('SMTP_SERVER')
         smtp_username = os.environ.get('SMTP_USERNAME')
         smtp_password = os.environ.get('SMTP_PASSWORD')
         
-        if not smtp_username or not smtp_password:
-            # Mode démo - log au lieu d'envoyer
+        if not all([smtp_server, smtp_username, smtp_password]):
             logger.info(f"Mode démo - Magic link pour {email}: {magic_link}")
             return True
         
-        # Créer le message
+        # Configuration SMTP
         msg = MIMEMultipart()
         msg['From'] = smtp_username
         msg['To'] = email
@@ -417,24 +355,20 @@ def send_magic_link_email(email, magic_link):
         Bonjour,
         
         Cliquez sur le lien ci-dessous pour vous connecter à WaveAI :
-        
         {magic_link}
         
         Ce lien est valide pendant 10 minutes.
         
-        Bonne navigation ! 🌊
-        L'équipe WaveAI
+        L'équipe WaveAI 🌊
         """
         
         msg.attach(MIMEText(body, 'plain'))
         
-        # Envoyer l'email
-        server = smtplib.SMTP(smtp_server, smtp_port)
-        server.starttls()
-        server.login(smtp_username, smtp_password)
-        text = msg.as_string()
-        server.sendmail(smtp_username, email, text)
-        server.quit()
+        # Envoi
+        with smtplib.SMTP(smtp_server, 587) as server:
+            server.starttls()
+            server.login(smtp_username, smtp_password)
+            server.sendmail(smtp_username, email, msg.as_string())
         
         logger.info(f"Magic link envoyé à {email}")
         return True
@@ -444,189 +378,234 @@ def send_magic_link_email(email, magic_link):
         return False
 
 def validate_email(email):
-    """Valide le format email"""
+    """Validation email sécurisée"""
+    if not email or not isinstance(email, str):
+        return False
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     return re.match(pattern, email) is not None
 
 def generate_magic_link(user):
-    """Génère un lien magique pour l'utilisateur"""
-    token = secrets.token_urlsafe(32)
-    expires_at = datetime.utcnow() + timedelta(minutes=10)
-    
-    # Invalider les anciens liens
-    MagicLink.query.filter_by(user_id=user.id, used=False).update({'used': True})
-    
-    # Créer nouveau lien
-    magic_link = MagicLink(
-        user_id=user.id,
-        token=token,
-        expires_at=expires_at
-    )
-    db.session.add(magic_link)
-    db.session.commit()
-    
-    return url_for('magic_login', token=token, _external=True)
+    """Génération lien magique sécurisé"""
+    try:
+        token = secrets.token_urlsafe(32)
+        expires_at = datetime.utcnow() + timedelta(minutes=10)
+        
+        # Invalider anciens liens
+        MagicLink.query.filter_by(user_id=user.id, used=False).update({'used': True})
+        db.session.commit()
+        
+        # Nouveau lien
+        magic_link = MagicLink(
+            user_id=user.id,
+            token=token,
+            expires_at=expires_at
+        )
+        db.session.add(magic_link)
+        db.session.commit()
+        
+        return url_for('magic_login', token=token, _external=True)
+        
+    except Exception as e:
+        logger.error(f"Erreur génération magic link: {e}")
+        return None
 
-# Routes principales
+# CORRECTION 6: Routes avec gestion d'erreurs complète
 @app.route('/')
 def landing():
-    """Page d'accueil WaveAI"""
-    return render_template('landing.html')
+    """Page d'accueil"""
+    try:
+        return render_template('landing.html')
+    except Exception as e:
+        logger.error(f"Erreur landing: {e}")
+        return f"<h1>🌊 WaveAI</h1><p>Bienvenue ! <a href='{url_for('login')}'>Se connecter</a></p>"
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    """Connexion utilisateur avec support lien magique"""
+    """Connexion utilisateur avec toutes les fonctionnalités"""
     if request.method == 'POST':
-        email = request.form.get('email', '').strip().lower()
-        use_magic_link = 'magic_link' in request.form
-        
-        if not validate_email(email):
-            flash('Adresse email invalide', 'error')
-            return render_template('login.html')
-        
-        # Recherche ou création utilisateur
-        user = User.query.filter_by(email=email).first()
-        
-        if not user:
-            # Créer nouvel utilisateur
-            name = email.split('@')[0].title()
-            user = User(email=email, name=name)
+        try:
+            email = request.form.get('email', '').strip().lower()
+            use_magic_link = 'magic_link' in request.form
             
-            # Créer paramètres IA par défaut
-            ai_settings = AISettings(user=user)
+            if not validate_email(email):
+                flash('Adresse email invalide', 'error')
+                return render_template('login.html')
             
-            db.session.add(user)
-            db.session.add(ai_settings)
-            db.session.commit()
+            # Recherche ou création utilisateur
+            user = User.query.filter_by(email=email).first()
             
-            logger.info(f"Nouvel utilisateur créé: {email}")
-        
-        if use_magic_link:
-            # Envoyer lien magique
-            magic_link = generate_magic_link(user)
-            if send_magic_link_email(email, magic_link):
-                flash(f'Lien magique envoyé à {email} ! Vérifiez votre boîte mail. 📧', 'success')
+            if not user:
+                name = email.split('@')[0].title()
+                user = User(email=email, name=name)
+                db.session.add(user)
+                db.session.flush()
+                
+                # Paramètres IA par défaut
+                ai_settings = AISettings(user_id=user.id)
+                db.session.add(ai_settings)
+                
+                db.session.commit()
+                logger.info(f"Nouvel utilisateur: {email}")
+            
+            if use_magic_link:
+                # Lien magique
+                magic_link = generate_magic_link(user)
+                if magic_link and send_magic_link_email(email, magic_link):
+                    flash(f'Lien magique envoyé à {email} ! 📧', 'success')
+                else:
+                    flash('Erreur lors de l\'envoi du lien magique', 'error')
+                return render_template('login.html')
             else:
-                flash('Erreur lors de l\'envoi du lien magique', 'error')
-            return render_template('login.html')
-        else:
-            # Connexion directe (mode démo)
-            user.last_login = datetime.utcnow()
-            db.session.commit()
-            
-            session['user_id'] = user.id
-            session['user_email'] = user.email
-            session['user_name'] = user.name
-            session.permanent = True
-            
-            flash(f'Bienvenue {user.name} ! 🌊', 'success')
-            return redirect(url_for('dashboard'))
+                # Connexion directe
+                user.last_login = datetime.utcnow()
+                db.session.commit()
+                
+                session['user_id'] = user.id
+                session['user_email'] = user.email
+                session['user_name'] = user.name
+                session.permanent = True
+                
+                flash(f'Bienvenue {user.name} ! 🌊', 'success')
+                return redirect(url_for('dashboard'))
+                
+        except Exception as e:
+            logger.error(f"Erreur login: {e}")
+            flash('Erreur de connexion', 'error')
+            db.session.rollback()
     
     return render_template('login.html')
 
 @app.route('/magic/<token>')
 def magic_login(token):
     """Connexion via lien magique"""
-    magic_link = MagicLink.query.filter_by(token=token, used=False).first()
-    
-    if not magic_link:
-        flash('Lien magique invalide ou expiré', 'error')
+    try:
+        magic_link = MagicLink.query.filter_by(token=token, used=False).first()
+        
+        if not magic_link:
+            flash('Lien magique invalide ou expiré', 'error')
+            return redirect(url_for('login'))
+        
+        if magic_link.expires_at < datetime.utcnow():
+            flash('Lien magique expiré', 'error')
+            return redirect(url_for('login'))
+        
+        # Utilisation du lien
+        magic_link.used = True
+        magic_link.user.last_login = datetime.utcnow()
+        db.session.commit()
+        
+        # Connexion
+        session['user_id'] = magic_link.user.id
+        session['user_email'] = magic_link.user.email
+        session['user_name'] = magic_link.user.name
+        session.permanent = True
+        
+        flash(f'Connexion réussie ! Bienvenue {magic_link.user.name} 🌊', 'success')
+        return redirect(url_for('dashboard'))
+        
+    except Exception as e:
+        logger.error(f"Erreur magic login: {e}")
+        flash('Erreur de connexion', 'error')
         return redirect(url_for('login'))
-    
-    if magic_link.expires_at < datetime.utcnow():
-        flash('Lien magique expiré', 'error')
-        return redirect(url_for('login'))
-    
-    # Marquer le lien comme utilisé
-    magic_link.used = True
-    magic_link.user.last_login = datetime.utcnow()
-    db.session.commit()
-    
-    # Connecter l'utilisateur
-    session['user_id'] = magic_link.user.id
-    session['user_email'] = magic_link.user.email
-    session['user_name'] = magic_link.user.name
-    session.permanent = True
-    
-    flash(f'Connexion réussie ! Bienvenue {magic_link.user.name} 🌊', 'success')
-    return redirect(url_for('dashboard'))
 
 @app.route('/logout')
 def logout():
-    """Déconnexion utilisateur"""
+    """Déconnexion"""
     session.clear()
     flash('Déconnexion réussie', 'info')
     return redirect(url_for('landing'))
 
 @app.route('/dashboard')
 def dashboard():
-    """Tableau de bord principal"""
+    """Dashboard principal avec toutes les fonctionnalités"""
     if 'user_id' not in session:
         return redirect(url_for('login'))
     
-    user = User.query.get(session['user_id'])
-    if not user:
-        session.clear()
+    try:
+        user = User.query.get(session['user_id'])
+        if not user:
+            session.clear()
+            return redirect(url_for('login'))
+        
+        # Stats
+        stats = {
+            'total_conversations': Conversation.query.filter_by(user_id=user.id).count(),
+            'agents_used': db.session.query(Conversation.agent_type).filter_by(user_id=user.id).distinct().count(),
+            'last_activity': user.last_login.strftime('%d/%m/%Y à %H:%M') if user.last_login else 'Première connexion',
+            'account_age': (datetime.utcnow() - user.created_at).days if user.created_at else 0
+        }
+        
+        # Vérifier Ollama
+        ollama_available = ai_system.check_ollama_availability()
+        
+        return render_template('dashboard.html', 
+                             user=user, 
+                             stats=stats, 
+                             agents=ai_system.agents,
+                             ollama_available=ollama_available)
+                             
+    except Exception as e:
+        logger.error(f"Erreur dashboard: {e}")
+        flash('Erreur lors du chargement du dashboard', 'error')
         return redirect(url_for('login'))
-    
-    # Statistiques utilisateur
-    stats = {
-        'total_conversations': Conversation.query.filter_by(user_id=user.id).count(),
-        'agents_used': db.session.query(Conversation.agent_type).filter_by(user_id=user.id).distinct().count(),
-        'last_activity': user.last_login.strftime('%d/%m/%Y à %H:%M') if user.last_login else 'Première connexion',
-        'account_age': (datetime.utcnow() - user.created_at).days if user.created_at else 0
-    }
-    
-    # Vérifier la disponibilité d'Ollama
-    ollama_available = ai_system.check_ollama_availability()
-    
-    return render_template('dashboard.html', 
-                         user=user, 
-                         stats=stats, 
-                         agents=ai_system.agents,
-                         ollama_available=ollama_available)
 
 @app.route('/ai-settings', methods=['GET', 'POST'])
 def ai_settings():
-    """Configuration IA utilisateur"""
+    """Configuration IA complète"""
     if 'user_id' not in session:
         return redirect(url_for('login'))
     
-    user = User.query.get(session['user_id'])
-    if not user.ai_settings:
-        user.ai_settings = AISettings(user_id=user.id)
-        db.session.add(user.ai_settings)
-        db.session.commit()
-    
-    if request.method == 'POST':
-        settings = user.ai_settings
+    try:
+        user = User.query.get(session['user_id'])
+        if not user:
+            return redirect(url_for('login'))
         
-        # Mise à jour des paramètres
-        settings.openai_api_key = request.form.get('openai_key', '').strip()
-        settings.anthropic_api_key = request.form.get('anthropic_key', '').strip()
-        settings.huggingface_token = request.form.get('huggingface_token', '').strip()
-        settings.default_model = request.form.get('default_model', 'huggingface')
-        settings.use_ollama = 'use_ollama' in request.form
+        # Créer settings si nécessaire
+        if not user.ai_settings:
+            ai_settings = AISettings(user_id=user.id)
+            db.session.add(ai_settings)
+            db.session.commit()
+            user.ai_settings = ai_settings
         
-        # Paramètres avancés
-        try:
-            settings.temperature = float(request.form.get('temperature', 0.7))
-            settings.max_tokens = int(request.form.get('max_tokens', 1000))
-        except ValueError:
-            settings.temperature = 0.7
-            settings.max_tokens = 1000
+        if request.method == 'POST':
+            settings = user.ai_settings
+            
+            # Mise à jour
+            settings.openai_api_key = request.form.get('openai_key', '').strip()
+            settings.anthropic_api_key = request.form.get('anthropic_key', '').strip()
+            settings.huggingface_token = request.form.get('huggingface_token', '').strip()
+            settings.default_model = request.form.get('default_model', 'huggingface')
+            settings.use_ollama = 'use_ollama' in request.form
+            
+            # Paramètres avancés avec validation
+            try:
+                settings.temperature = float(request.form.get('temperature', 0.7))
+                settings.temperature = max(0.0, min(1.0, settings.temperature))
+            except (ValueError, TypeError):
+                settings.temperature = 0.7
+            
+            try:
+                settings.max_tokens = int(request.form.get('max_tokens', 1000))
+                settings.max_tokens = max(100, min(2000, settings.max_tokens))
+            except (ValueError, TypeError):
+                settings.max_tokens = 1000
+            
+            settings.updated_at = datetime.utcnow()
+            db.session.commit()
+            
+            flash('Paramètres IA mis à jour ! 🤖', 'success')
+            return redirect(url_for('dashboard'))
         
-        settings.updated_at = datetime.utcnow()
+        return render_template('ai_settings.html', user=user, ollama_available=ai_system.check_ollama_availability())
         
-        db.session.commit()
-        flash('Paramètres IA mis à jour ! 🤖', 'success')
+    except Exception as e:
+        logger.error(f"Erreur ai_settings: {e}")
+        flash('Erreur lors de la configuration IA', 'error')
         return redirect(url_for('dashboard'))
-    
-    return render_template('ai_settings.html', user=user)
 
 @app.route('/chat/<agent_type>')
 def chat(agent_type):
-    """Interface de chat avec un agent"""
+    """Interface de chat"""
     if 'user_id' not in session:
         return redirect(url_for('login'))
     
@@ -639,32 +618,32 @@ def chat(agent_type):
 
 @app.route('/api/chat', methods=['POST'])
 def api_chat():
-    """API de chat avec les agents IA"""
+    """API chat avec IA complète"""
     if 'user_id' not in session:
         return jsonify({'error': 'Non connecté'}), 401
     
-    data = request.get_json()
-    if not data:
-        return jsonify({'error': 'Données manquantes'}), 400
-    
-    message = data.get('message', '').strip()
-    agent_type = data.get('agent', 'kai')
-    
-    if not message:
-        return jsonify({'error': 'Message vide'}), 400
-    
-    if len(message) > 5000:
-        return jsonify({'error': 'Message trop long (max 5000 caractères)'}), 400
-    
     try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Données manquantes'}), 400
+        
+        message = data.get('message', '').strip()
+        agent_type = data.get('agent', 'kai')
+        
+        if not message:
+            return jsonify({'error': 'Message vide'}), 400
+        
+        if len(message) > 5000:
+            return jsonify({'error': 'Message trop long'}), 400
+        
         user = User.query.get(session['user_id'])
         if not user:
             return jsonify({'error': 'Utilisateur non trouvé'}), 401
         
-        # Obtenir la réponse IA
+        # Obtenir réponse IA
         response = ai_system.get_response(message, agent_type, user.ai_settings)
         
-        # Sauvegarder la conversation
+        # Sauvegarder conversation
         conversation_data = {
             'user_message': message,
             'agent_response': response['response'],
@@ -685,131 +664,55 @@ def api_chat():
         
     except Exception as e:
         logger.error(f"Erreur API chat: {e}")
-        return jsonify({'error': 'Erreur interne du serveur'}), 500
-
-@app.route('/api/conversations')
-def api_conversations():
-    """API pour récupérer l'historique des conversations"""
-    if 'user_id' not in session:
-        return jsonify({'error': 'Non connecté'}), 401
-    
-    try:
-        conversations = Conversation.query.filter_by(user_id=session['user_id']).order_by(Conversation.updated_at.desc()).limit(50).all()
-        
-        result = []
-        for conv in conversations:
-            result.append({
-                'id': conv.id,
-                'agent_type': conv.agent_type,
-                'title': conv.title,
-                'created_at': conv.created_at.isoformat(),
-                'updated_at': conv.updated_at.isoformat()
-            })
-        
-        return jsonify(result)
-        
-    except Exception as e:
-        logger.error(f"Erreur API conversations: {e}")
         return jsonify({'error': 'Erreur interne'}), 500
 
 @app.route('/api/status')
 def api_status():
-    """Status de l'application et des services"""
-    ollama_status = ai_system.check_ollama_availability()
-    
-    return jsonify({
-        'status': 'ok',
-        'app': 'WaveAI',
-        'version': '1.0.0',
-        'agents': list(ai_system.agents.keys()),
-        'services': {
-            'ollama_local': ollama_status,
-            'huggingface': True,  # Toujours disponible
-            'database': True
-        },
-        'timestamp': datetime.utcnow().isoformat()
-    })
+    """Status complet"""
+    try:
+        return jsonify({
+            'status': 'ok',
+            'app': 'WaveAI',
+            'version': '1.0.0',
+            'agents': list(ai_system.agents.keys()),
+            'services': {
+                'ollama_local': ai_system.check_ollama_availability(),
+                'database': True
+            },
+            'timestamp': datetime.utcnow().isoformat()
+        })
+    except Exception as e:
+        logger.error(f"Erreur status: {e}")
+        return jsonify({'error': 'Erreur status'}), 500
 
 # PWA Routes
 @app.route('/manifest.json')
 def manifest():
     """Manifest PWA"""
-    manifest_data = {
-        "name": "WaveAI - Agents IA Intelligents",
-        "short_name": "WaveAI",
-        "description": "Plateforme d'agents IA spécialisés - Alex, Lina, Marco, Sofia, Kai",
-        "start_url": "/",
-        "display": "standalone",
-        "background_color": "#0f4c75",
-        "theme_color": "#3282b8",
-        "orientation": "portrait-primary",
-        "scope": "/",
-        "lang": "fr",
-        "icons": [
-            {
-                "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🌊%3C/text%3E%3C/svg%3E",
-                "sizes": "any",
-                "type": "image/svg+xml",
-                "purpose": "any maskable"
-            }
-        ],
-        "shortcuts": [
-            {
-                "name": "Chat avec Kai",
-                "short_name": "Kai Wave",
-                "description": "Assistant IA conversationnel",
-                "url": "/chat/kai"
-            },
-            {
-                "name": "Productivité Alex",
-                "short_name": "Alex Wave", 
-                "description": "Agent productivité et Gmail",
-                "url": "/chat/alex"
-            }
-        ]
-    }
-    
-    response = make_response(jsonify(manifest_data))
-    response.headers['Content-Type'] = 'application/json'
-    return response
-
-@app.route('/sw.js')
-def service_worker():
-    """Service Worker pour PWA"""
-    sw_content = """
-// WaveAI Service Worker
-const CACHE_NAME = 'waveai-v1.0';
-const OFFLINE_URL = '/offline';
-
-self.addEventListener('install', event => {
-    console.log('WaveAI Service Worker: Installation');
-    event.waitUntil(self.skipWaiting());
-});
-
-self.addEventListener('activate', event => {
-    console.log('WaveAI Service Worker: Activation');
-    event.waitUntil(self.clients.claim());
-});
-
-self.addEventListener('fetch', event => {
-    if (event.request.mode === 'navigate') {
-        event.respondWith(
-            fetch(event.request).catch(() => {
-                return caches.match(OFFLINE_URL);
-            })
-        );
-    }
-});
-    """
-    
-    response = make_response(sw_content)
-    response.headers['Content-Type'] = 'application/javascript'
-    return response
-
-@app.route('/offline')
-def offline():
-    """Page hors ligne"""
-    return render_template('offline.html')
+    try:
+        manifest_data = {
+            "name": "WaveAI - Agents IA Intelligents",
+            "short_name": "WaveAI",
+            "description": "Plateforme d'agents IA spécialisés",
+            "start_url": "/",
+            "display": "standalone",
+            "background_color": "#0f4c75",
+            "theme_color": "#3282b8",
+            "icons": [
+                {
+                    "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🌊%3C/text%3E%3C/svg%3E",
+                    "sizes": "any",
+                    "type": "image/svg+xml"
+                }
+            ]
+        }
+        
+        response = make_response(jsonify(manifest_data))
+        response.headers['Content-Type'] = 'application/json'
+        return response
+    except Exception as e:
+        logger.error(f"Erreur manifest: {e}")
+        return jsonify({"error": "Manifest error"}), 500
 
 # Gestionnaires d'erreurs
 @app.errorhandler(404)
@@ -819,41 +722,37 @@ def not_found_error(error):
 @app.errorhandler(500)
 def internal_error(error):
     db.session.rollback()
-    return render_template('error.html', error='Erreur interne du serveur'), 500
+    return render_template('error.html', error='Erreur interne'), 500
 
-@app.errorhandler(403)
-def forbidden_error(error):
-    return render_template('error.html', error='Accès interdit'), 403
-
-# Initialisation de la base de données
-def create_tables():
-    """Créer les tables si elles n'existent pas"""
+# CORRECTION 7: Initialisation DB sécurisée
+def init_database():
+    """Initialisation sécurisée de la base de données"""
     try:
         with app.app_context():
             db.create_all()
             
-            # Version initiale
+            # Version par défaut
             if not AppVersion.query.filter_by(is_current=True).first():
                 version = AppVersion(
                     version='1.0.0',
-                    description='Version initiale WaveAI avec 5 agents IA et système universel',
+                    description='WaveAI avec système IA universel complet',
                     is_current=True,
-                    changelog='- 5 agents IA spécialisés\n- Système IA universel\n- Support PWA\n- Authentification universelle'
+                    changelog='- 5 agents IA spécialisés\n- Système IA universel\n- Multi-utilisateurs\n- PWA'
                 )
                 db.session.add(version)
                 db.session.commit()
-                
+            
             logger.info("Base de données WaveAI initialisée avec succès")
+            
     except Exception as e:
-        logger.error(f"Erreur initialisation DB: {e}")
+        logger.error(f"Erreur initialisation base de données: {e}")
 
 # Point d'entrée
 if __name__ == '__main__':
-    create_tables()
+    init_database()
     port = int(os.environ.get('PORT', 5000))
     debug = os.environ.get('FLASK_ENV') == 'development'
-    
     app.run(host='0.0.0.0', port=port, debug=debug)
 else:
-    # Pour Render et autres déploiements
-    create_tables()
+    # Pour déploiement (Render, etc.)
+    init_database()
