@@ -1,147 +1,732 @@
-{% extends "base.html" %}
-
-{% block title %}Dashboard - {{ user.name }} | WaveAI{% endblock %}
-
-{% block nav %}
-<span style="opacity: 0.8;">Bienvenue, <strong>{{ user.name }}</strong></span>
-<button class="btn" onclick="logout()" style="background: rgba(255,255,255,0.1);">
-    🚪 Déconnexion
-</button>
-{% endblock %}
-
-{% block content %}
-<div style="text-align: center; margin-bottom: 50px;">
-    <div style="width: 80px; height: 80px; border-radius: 50%; background: {{ user.avatar_color }}; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; font-size: 2em;">
-        🌊
-    </div>
-    <h1 style="font-size: 2.5em; margin-bottom: 10px;">
-        Bonjour {{ user.name }} ! 👋
-    </h1>
-    <p style="font-size: 1.2em; opacity: 0.8;">
-        Choisissez votre agent WaveAI pour commencer
-    </p>
-</div>
-
-<!-- Configuration IA -->
-<div style="text-align: center; margin-bottom: 30px;">
-    <a href="/ai-settings" class="btn" style="background: rgba(16, 185, 129, 0.2); border-color: #10b981;">
-        ⚙️ Configuration IA
-    </a>
-</div>
-
-<div class="agent-grid">
-    <div class="agent-card" onclick="location.href='/agents/alex'">
-        <div class="agent-icon">🏄‍♂️</div>
-        <div class="agent-name">Alex Wave</div>
-        <div class="agent-desc">
-            <strong>Gmail & Productivité</strong><br>
-            Votre expert en gestion d'emails et optimisation du workflow. 
-            Organisez, automatisez, et maximisez votre efficacité.
-        </div>
-        <div class="btn btn-primary">💬 Chatter avec Alex</div>
-    </div>
-    
-    <div class="agent-card" onclick="location.href='/agents/lina'">
-        <div class="agent-icon">🌊</div>
-        <div class="agent-name">Lina Wave</div>
-        <div class="agent-desc">
-            <strong>LinkedIn & Networking</strong><br>
-            Spécialiste en développement professionnel et stratégies LinkedIn. 
-            Développez votre réseau et votre influence.
-        </div>
-        <div class="btn btn-primary">💬 Chatter avec Lina</div>
-    </div>
-    
-    <div class="agent-card" onclick="location.href='/agents/marco'">
-        <div class="agent-icon">🏄‍♀️</div>
-        <div class="agent-name">Marco Wave</div>
-        <div class="agent-desc">
-            <strong>Réseaux Sociaux</strong><br>
-            Expert en création de contenu viral et stratégies social media. 
-            Boostez votre présence en ligne.
-        </div>
-        <div class="btn btn-primary">💬 Chatter avec Marco</div>
-    </div>
-    
-    <div class="agent-card" onclick="location.href='/agents/sofia'">
-        <div class="agent-icon">🌊</div>
-        <div class="agent-name">Sofia Wave</div>
-        <div class="agent-desc">
-            <strong>Calendrier & Planning</strong><br>
-            Maître de l'organisation et gestionnaire de temps. 
-            Planifiez, synchronisez, et optimisez votre agenda.
-        </div>
-        <div class="btn btn-primary">💬 Chatter avec Sofia</div>
-    </div>
-    
-    <div class="agent-card" onclick="location.href='/agents/kai'">
-        <div class="agent-icon">🤖</div>
-        <div class="agent-name">Kai Wave</div>
-        <div class="agent-desc">
-            <strong>Assistant Conversationnel</strong><br>
-            Votre compagnon IA pour discussions libres, questions générales, 
-            conseils personnels et exploration d'idées.
-        </div>
-        <div class="btn btn-primary">💬 Chatter avec Kai</div>
-    </div>
-</div>
-
-<div class="glass" style="text-align: center; margin-top: 50px; background: rgba(255,255,255,0.1);">
-    <h3 style="margin-bottom: 15px;">📊 Vos Statistiques</h3>
-    <div id="userStats" style="opacity: 0.8;">
-        Chargement de vos données...
-    </div>
-</div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-// Charger les statistiques utilisateur
-async function loadUserStats() {
-    try {
-        const response = await fetch('/api/user/stats');
-        const data = await response.json();
-        
-        if (data.success) {
-            const statsHtml = `
-                <p><strong>Membre depuis :</strong> ${data.user.member_since}</p>
-                <p><strong>Dernière connexion :</strong> ${data.user.last_login}</p>
-                <p><strong>Messages envoyés :</strong> ${data.stats.total_messages}</p>
-                <div style="margin-top: 15px;">
-                    <small>Alex: ${data.stats.agents_usage.alex} | Lina: ${data.stats.agents_usage.lina} | Marco: ${data.stats.agents_usage.marco} | Sofia: ${data.stats.agents_usage.sofia} | Kai: ${data.stats.agents_usage.kai}</small>
-                </div>
-            `;
-            document.getElementById('userStats').innerHTML = statsHtml;
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - WaveAI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="manifest" href="{{ url_for('manifest') }}">
+    <meta name="theme-color" content="#3282b8">
+    <style>
+        :root {
+            --wave-primary: #0f4c75;
+            --wave-secondary: #3282b8;
+            --wave-accent: #bbe1fa;
+            --wave-light: #f8f9fa;
+            --wave-dark: #2c3e50;
+            --wave-success: #27ae60;
+            --wave-warning: #f39c12;
+            --wave-error: #e74c3c;
         }
-    } catch (error) {
-        document.getElementById('userStats').innerHTML = '<p>Statistiques non disponibles</p>';
-    }
-}
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--wave-primary) 0%, var(--wave-secondary) 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        
+        .dashboard-header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .wave-logo {
+            font-size: 2rem;
+            animation: wave 2s ease-in-out infinite;
+        }
+        
+        @keyframes wave {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-10deg); }
+            75% { transform: rotate(10deg); }
+        }
+        
+        .logo-text {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, var(--wave-accent), #ffffff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .user-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .user-info {
+            text-align: right;
+        }
+        
+        .user-name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        
+        .user-email {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .dropdown-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .dropdown-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            min-width: 200px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            z-index: 1000;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .dropdown-content a {
+            color: var(--wave-primary);
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            transition: background-color 0.3s;
+        }
+        
+        .dropdown-content a:hover {
+            background-color: rgba(50, 130, 184, 0.1);
+        }
+        
+        .dropdown:hover .dropdown-content {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .main-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .welcome-section {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        
+        .welcome-title {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, var(--wave-accent), #ffffff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .welcome-subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--wave-accent);
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-label {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+        
+        .agents-section {
+            margin-bottom: 3rem;
+        }
+        
+        .section-title {
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            text-align: center;
+            background: linear-gradient(45deg, var(--wave-accent), #ffffff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .agents-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+        
+        .agent-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .agent-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--wave-accent), var(--wave-secondary));
+        }
+        
+        .agent-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+            border-color: var(--wave-accent);
+        }
+        
+        .agent-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .agent-avatar {
+            font-size: 3rem;
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .agent-info h3 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--wave-accent);
+        }
+        
+        .agent-info p {
+            opacity: 0.9;
+            font-size: 0.95rem;
+        }
+        
+        .agent-action {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .chat-btn {
+            background: var(--wave-accent);
+            color: var(--wave-primary);
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .chat-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(187, 225, 250, 0.4);
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--wave-success);
+        }
+        
+        .services-section {
+            margin-bottom: 3rem;
+        }
+        
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .service-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+        }
+        
+        .service-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+        
+        .service-status {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .service-description {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        .status-online {
+            color: var(--wave-success);
+        }
+        
+        .status-offline {
+            color: var(--wave-warning);
+        }
+        
+        .quick-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+        
+        .action-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .action-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .pwa-install {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--wave-accent);
+            color: var(--wave-primary);
+            border: none;
+            padding: 1rem 1.5rem;
+            border-radius: 50px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 5px 20px rgba(187, 225, 250, 0.4);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .flash-messages {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        
+        .flash-message {
+            background: rgba(255, 255, 255, 0.95);
+            color: var(--wave-primary);
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 0.5rem;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(100%); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        .flash-success {
+            border-left: 4px solid var(--wave-success);
+        }
+        
+        .flash-error {
+            border-left: 4px solid var(--wave-error);
+        }
+        
+        .flash-info {
+            border-left: 4px solid var(--wave-secondary);
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-header {
+                padding: 1rem;
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .main-content {
+                padding: 1rem;
+            }
+            
+            .welcome-title {
+                font-size: 2rem;
+            }
+            
+            .stats-grid,
+            .agents-grid,
+            .services-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .agent-header {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .agent-action {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Flash Messages -->
+    <div class="flash-messages">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message flash-{{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
 
-// Fonction de déconnexion
-async function logout() {
-    try {
-        await fetch('/api/auth/logout', { method: 'POST' });
-        window.location.href = '/';
-    } catch (error) {
-        window.location.href = '/';
-    }
-}
+    <!-- Header -->
+    <div class="dashboard-header">
+        <div class="logo-section">
+            <div class="wave-logo">🌊</div>
+            <div class="logo-text">WaveAI</div>
+        </div>
+        
+        <div class="user-section">
+            <div class="user-info">
+                <div class="user-name">{{ user.name }}</div>
+                <div class="user-email">{{ user.email }}</div>
+            </div>
+            
+            <div class="dropdown">
+                <button class="dropdown-btn">⚙️ Menu</button>
+                <div class="dropdown-content">
+                    <a href="{{ url_for('ai_settings') }}">🤖 Paramètres IA</a>
+                    <a href="{{ url_for('api_conversations') }}">💬 Historique</a>
+                    <a href="#" onclick="installPWA()">📱 Installer App</a>
+                    <a href="{{ url_for('logout') }}">🚪 Déconnexion</a>
+                </div>
+            </div>
+        </div>
+    </div>
 
-// Charger les stats au chargement de la page
-document.addEventListener('DOMContentLoaded', loadUserStats);
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Welcome Section -->
+        <div class="welcome-section">
+            <h1 class="welcome-title">Bienvenue {{ user.name }} ! 🌊</h1>
+            <p class="welcome-subtitle">
+                Votre plateforme d'agents IA intelligents est prête. 
+                Choisissez votre agent spécialisé ci-dessous.
+            </p>
+        </div>
 
-// Animation d'entrée
-document.querySelectorAll('.agent-card').forEach((card, index) => {
-    card.style.opacity = '0';
-    card.style.transform = 'translateY(30px)';
-    
-    setTimeout(() => {
-        card.style.transition = 'all 0.6s ease';
-        card.style.opacity = '1';
-        card.style.transform = 'translateY(0)';
-    }, index * 150);
-});
-</script>
-{% endblock %}
+        <!-- Statistics -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number">{{ stats.total_conversations }}</div>
+                <div class="stat-label">Conversations totales</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ stats.agents_used }}</div>
+                <div class="stat-label">Agents utilisés</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ stats.account_age }}</div>
+                <div class="stat-label">Jours d'ancienneté</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ stats.last_activity }}</div>
+                <div class="stat-label">Dernière activité</div>
+            </div>
+        </div>
 
+        <!-- Agents Section -->
+        <div class="agents-section">
+            <h2 class="section-title">🤖 Vos Agents IA Spécialisés</h2>
+            <div class="agents-grid">
+                {% for agent_id, agent in agents.items() %}
+                <a href="{{ url_for('chat', agent_type=agent_id) }}" class="agent-card">
+                    <div class="agent-header">
+                        <div class="agent-avatar">{{ agent.emoji }}</div>
+                        <div class="agent-info">
+                            <h3>{{ agent.name }}</h3>
+                            <p>{{ agent.description }}</p>
+                        </div>
+                    </div>
+                    <div class="agent-action">
+                        <div class="status-indicator">
+                            <div class="status-dot"></div>
+                            <span>En ligne</span>
+                        </div>
+                        <div class="chat-btn">
+                            💬 Discuter
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Services Status -->
+        <div class="services-section">
+            <h2 class="section-title">🔧 État des Services</h2>
+            <div class="services-grid">
+                <div class="service-card">
+                    <div class="service-icon">🤖</div>
+                    <div class="service-status status-online">Hugging Face</div>
+                    <div class="service-description">IA gratuite disponible</div>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon">🏠</div>
+                    <div class="service-status {% if ollama_available %}status-online{% else %}status-offline{% endif %}">
+                        Ollama Local
+                    </div>
+                    <div class="service-description">
+                        {% if ollama_available %}
+                            IA locale active
+                        {% else %}
+                            Non installé
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon">💾</div>
+                    <div class="service-status status-online">Base de données</div>
+                    <div class="service-description">Stockage sécurisé</div>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon">🌊</div>
+                    <div class="service-status status-online">WaveAI</div>
+                    <div class="service-description">Tous systèmes OK</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+            <a href="{{ url_for('ai_settings') }}" class="action-btn">
+                🔧 Configurer IA
+            </a>
+            <a href="{{ url_for('api_status') }}" class="action-btn" target="_blank">
+                📊 Status API
+            </a>
+            <button onclick="checkForUpdates()" class="action-btn">
+                🔄 Vérifier MAJ
+            </button>
+            {% if not ollama_available %}
+            <a href="https://ollama.ai" target="_blank" class="action-btn">
+                📥 Installer Ollama
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- PWA Install Button -->
+    <button class="pwa-install" id="pwaInstall" onclick="installPWA()">
+        📱 Installer WaveAI
+    </button>
+
+    <script>
+        // PWA Installation
+        let deferredPrompt;
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('pwaInstall').style.display = 'block';
+        });
+        
+        function installPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('PWA installée');
+                        document.getElementById('pwaInstall').style.display = 'none';
+                    }
+                    deferredPrompt = null;
+                });
+            } else {
+                alert('WaveAI peut être installée comme une application sur votre appareil !');
+            }
+        }
+        
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+                .then((registration) => {
+                    console.log('Service Worker enregistré:', registration);
+                })
+                .catch((error) => {
+                    console.log('Erreur Service Worker:', error);
+                });
+        }
+        
+        // Check for Updates
+        function checkForUpdates() {
+            fetch('/api/status')
+                .then(response => response.json())
+                .then(data => {
+                    alert(`WaveAI v${data.version} - Dernière vérification: ${new Date().toLocaleTimeString()}`);
+                })
+                .catch(error => {
+                    alert('Erreur lors de la vérification des mises à jour');
+                });
+        }
+        
+        // Auto-hide flash messages
+        document.addEventListener('DOMContentLoaded', function() {
+            const flashMessages = document.querySelectorAll('.flash-message');
+            flashMessages.forEach(message => {
+                setTimeout(() => {
+                    message.style.animation = 'slideOut 0.3s ease forwards';
+                    setTimeout(() => message.remove(), 300);
+                }, 5000);
+            });
+        });
+        
+        // Add slideOut animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideOut {
+                from { opacity: 1; transform: translateX(0); }
+                to { opacity: 0; transform: translateX(100%); }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Ctrl/Cmd + K pour recherche rapide
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                window.location.href = '{{ url_for("chat", agent_type="kai") }}';
+            }
+            
+            // Ctrl/Cmd + 1-5 pour accès rapide aux agents
+            if ((e.ctrlKey || e.metaKey) && ['1','2','3','4','5'].includes(e.key)) {
+                e.preventDefault();
+                const agents = ['kai', 'alex', 'lina', 'marco', 'sofia'];
+                const agentIndex = parseInt(e.key) - 1;
+                if (agents[agentIndex]) {
+                    window.location.href = `/chat/${agents[agentIndex]}`;
+                }
+            }
+        });
+        
+        // Online/Offline detection
+        window.addEventListener('online', () => {
+            console.log('WaveAI: Connexion rétablie');
+        });
+        
+        window.addEventListener('offline', () => {
+            console.log('WaveAI: Mode hors ligne activé');
+        });
+    </script>
+</body>
+</html>
