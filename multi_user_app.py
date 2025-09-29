@@ -1,5 +1,5 @@
-# WaveAI - VERSION FINALE STABLE
-# Correction d'URGENCE - Toutes fonctionnalités avec sécurité maximale
+# WaveAI - Application Multi-Utilisateurs Finale
+# Version propre sans conflits
 
 import os
 import logging
@@ -8,24 +8,20 @@ import secrets
 import re
 from datetime import datetime, timedelta
 
-# Imports Flask - Base
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, make_response
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from werkzeug.security import generate_password_hash, check_password_hash
 
-# Configuration de base SÉCURISÉE
+# Configuration
 app = Flask(__name__)
-
-# Configuration avec fallbacks complets
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', secrets.token_hex(32))
-database_url = os.environ.get('DATABASE_URL', 'sqlite:///waveai.db')
 
-# CORRECTION CRITIQUE : Fix PostgreSQL URL
+# Database URL avec correction PostgreSQL
+database_url = os.environ.get('DATABASE_URL', 'sqlite:///waveai.db')
 if database_url.startswith('postgres://'):
     database_url = database_url.replace('postgres://', 'postgresql://', 1)
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 
@@ -33,18 +29,13 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
-# Logging sécurisé
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+# Logging
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# MODÈLES DE BASE DE DONNÉES - SÉCURISÉS
+# Modèles
 class User(db.Model):
-    """Utilisateur WaveAI"""
     __tablename__ = 'users'
-    
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     name = db.Column(db.String(100), nullable=False)
@@ -63,30 +54,21 @@ class User(db.Model):
         }
 
 class AISettings(db.Model):
-    """Paramètres IA utilisateur"""
     __tablename__ = 'ai_settings'
-    
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    
-    # APIs
     openai_api_key = db.Column(db.String(200))
     anthropic_api_key = db.Column(db.String(200))
     huggingface_token = db.Column(db.String(200))
-    
-    # Préférences
     default_model = db.Column(db.String(100), default='huggingface')
     use_ollama = db.Column(db.Boolean, default=True)
     temperature = db.Column(db.Float, default=0.7)
     max_tokens = db.Column(db.Integer, default=1000)
-    
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 class Conversation(db.Model):
-    """Conversations"""
     __tablename__ = 'conversations'
-    
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     agent_type = db.Column(db.String(50), nullable=False)
@@ -95,31 +77,16 @@ class Conversation(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-class MagicLink(db.Model):
-    """Liens magiques"""
-    __tablename__ = 'magic_links'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    token = db.Column(db.String(100), nullable=False, unique=True)
-    expires_at = db.Column(db.DateTime, nullable=False)
-    used = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
 class AppVersion(db.Model):
-    """Versions app"""
     __tablename__ = 'app_versions'
-    
     id = db.Column(db.Integer, primary_key=True)
     version = db.Column(db.String(20), nullable=False)
     description = db.Column(db.Text)
     release_date = db.Column(db.DateTime, default=datetime.utcnow)
     is_current = db.Column(db.Boolean, default=False)
 
-# SYSTÈME IA SÉCURISÉ - Toutes fonctionnalités
-class SecureAISystem:
-    """Système IA avec sécurité maximale"""
-    
+# Système IA
+class WaveAISystem:
     def __init__(self):
         self.agents = {
             'kai': {
@@ -155,30 +122,23 @@ class SecureAISystem:
         }
     
     def check_ollama_availability(self):
-        """Vérifie Ollama avec sécurité"""
         try:
             import requests
             response = requests.get('http://localhost:11434/api/tags', timeout=2)
             return response.status_code == 200
-        except Exception as e:
-            logger.debug(f"Ollama non disponible: {e}")
+        except Exception:
             return False
     
     def get_huggingface_response(self, message, agent_type, settings=None):
-        """Hugging Face sécurisé"""
         try:
             import requests
-            
             agent = self.agents.get(agent_type, self.agents['kai'])
             
-            # API Hugging Face simple
             headers = {'Content-Type': 'application/json'}
             if settings and settings.huggingface_token:
                 headers['Authorization'] = f'Bearer {settings.huggingface_token}'
             
-            # Modèle gratuit fiable
             url = "https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium"
-            
             payload = {
                 "inputs": message,
                 "parameters": {
@@ -195,7 +155,6 @@ class SecureAISystem:
                 if isinstance(result, list) and len(result) > 0:
                     generated = result[0].get('generated_text', '').strip()
                     if generated and generated != message:
-                        # Nettoyer la réponse
                         clean_response = generated.replace(message, '').strip()
                         if clean_response:
                             return {
@@ -204,24 +163,19 @@ class SecureAISystem:
                                 'agent': agent_type,
                                 'timestamp': datetime.utcnow().isoformat()
                             }
-            
         except Exception as e:
             logger.error(f"Erreur Hugging Face: {e}")
-        
         return None
     
     def get_openai_response(self, message, agent_type, settings):
-        """OpenAI sécurisé - Version 0.28"""
         try:
             if not settings or not settings.openai_api_key:
                 return None
             
             import openai
             openai.api_key = settings.openai_api_key
-            
             agent = self.agents.get(agent_type, self.agents['kai'])
             
-            # Version 0.28 de l'API
             response = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo",
                 messages=[
@@ -238,23 +192,19 @@ class SecureAISystem:
                 'agent': agent_type,
                 'timestamp': datetime.utcnow().isoformat()
             }
-            
         except Exception as e:
             logger.error(f"Erreur OpenAI: {e}")
             return None
     
     def get_anthropic_response(self, message, agent_type, settings):
-        """Anthropic sécurisé - Version 0.3"""
         try:
             if not settings or not settings.anthropic_api_key:
                 return None
             
             import anthropic
             client = anthropic.Client(api_key=settings.anthropic_api_key)
-            
             agent = self.agents.get(agent_type, self.agents['kai'])
             
-            # Version 0.3 de l'API
             response = client.completions.create(
                 model="claude-instant-1.2",
                 max_tokens_to_sample=min(settings.max_tokens or 1000, 1500),
@@ -268,13 +218,11 @@ class SecureAISystem:
                 'agent': agent_type,
                 'timestamp': datetime.utcnow().isoformat()
             }
-            
         except Exception as e:
             logger.error(f"Erreur Anthropic: {e}")
             return None
     
     def get_response(self, message, agent_type='kai', user_settings=None):
-        """Système complet avec fallbacks"""
         if not message or not message.strip():
             agent = self.agents.get(agent_type, self.agents['kai'])
             return {
@@ -286,20 +234,17 @@ class SecureAISystem:
         
         # Ordre des tentatives
         methods = []
-        
         if user_settings:
             if user_settings.default_model == 'openai' and user_settings.openai_api_key:
                 methods.append(self.get_openai_response)
             elif user_settings.default_model == 'anthropic' and user_settings.anthropic_api_key:
                 methods.append(self.get_anthropic_response)
             
-            # Ajouter les autres APIs disponibles
             if user_settings.openai_api_key and self.get_openai_response not in methods:
                 methods.append(self.get_openai_response)
             if user_settings.anthropic_api_key and self.get_anthropic_response not in methods:
                 methods.append(self.get_anthropic_response)
         
-        # Hugging Face en fallback
         methods.append(self.get_huggingface_response)
         
         # Essayer chaque méthode
@@ -321,12 +266,10 @@ class SecureAISystem:
             'timestamp': datetime.utcnow().isoformat()
         }
 
-# Instance IA globale
-ai_system = SecureAISystem()
+ai_system = WaveAISystem()
 
-# FONCTIONS UTILITAIRES SÉCURISÉES
+# Fonctions utilitaires
 def validate_email(email):
-    """Validation email robuste"""
     if not email or not isinstance(email, str):
         return False
     email = email.strip().lower()
@@ -334,7 +277,6 @@ def validate_email(email):
     return re.match(pattern, email) is not None and len(email) <= 120
 
 def get_user_settings(user_id):
-    """Récupère settings utilisateur avec sécurité"""
     try:
         settings = AISettings.query.filter_by(user_id=user_id).first()
         if not settings:
@@ -346,10 +288,9 @@ def get_user_settings(user_id):
         logger.error(f"Erreur get_user_settings: {e}")
         return None
 
-# ROUTES SÉCURISÉES
+# Routes
 @app.route('/')
 def landing():
-    """Page d'accueil"""
     try:
         return render_template('landing.html')
     except Exception as e:
@@ -358,7 +299,6 @@ def landing():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    """Connexion sécurisée"""
     if request.method == 'POST':
         try:
             email = request.form.get('email', '').strip().lower()
@@ -367,7 +307,6 @@ def login():
                 flash('Adresse email invalide', 'error')
                 return render_template('login.html')
             
-            # Recherche/création utilisateur
             user = User.query.filter_by(email=email).first()
             
             if not user:
@@ -376,14 +315,12 @@ def login():
                 db.session.add(user)
                 db.session.flush()
                 
-                # Settings par défaut
                 settings = AISettings(user_id=user.id)
                 db.session.add(settings)
                 db.session.commit()
                 
                 logger.info(f"Nouvel utilisateur: {email}")
             
-            # Connexion
             user.last_login = datetime.utcnow()
             db.session.commit()
             
@@ -404,14 +341,12 @@ def login():
 
 @app.route('/logout')
 def logout():
-    """Déconnexion"""
     session.clear()
     flash('Déconnexion réussie', 'info')
     return redirect(url_for('landing'))
 
 @app.route('/dashboard')
 def dashboard():
-    """Dashboard principal"""
     if 'user_id' not in session:
         return redirect(url_for('login'))
     
@@ -421,7 +356,6 @@ def dashboard():
             session.clear()
             return redirect(url_for('login'))
         
-        # Statistics
         stats = {
             'total_conversations': Conversation.query.filter_by(user_id=user.id).count(),
             'agents_used': db.session.query(Conversation.agent_type).filter_by(user_id=user.id).distinct().count(),
@@ -434,7 +368,6 @@ def dashboard():
                              stats=stats, 
                              agents=ai_system.agents,
                              ollama_available=ai_system.check_ollama_availability())
-                             
     except Exception as e:
         logger.error(f"Erreur dashboard: {e}")
         flash('Erreur dashboard', 'error')
@@ -442,7 +375,6 @@ def dashboard():
 
 @app.route('/ai-settings', methods=['GET', 'POST'])  
 def ai_settings():
-    """Configuration IA"""
     if 'user_id' not in session:
         return redirect(url_for('login'))
     
@@ -451,19 +383,16 @@ def ai_settings():
         if not user:
             return redirect(url_for('login'))
         
-        # Récupérer/créer settings
         settings = get_user_settings(user.id)
         
         if request.method == 'POST':
             if settings:
-                # Mise à jour sécurisée
                 settings.openai_api_key = request.form.get('openai_key', '').strip()
                 settings.anthropic_api_key = request.form.get('anthropic_key', '').strip()
                 settings.huggingface_token = request.form.get('huggingface_token', '').strip()
                 settings.default_model = request.form.get('default_model', 'huggingface')
                 settings.use_ollama = 'use_ollama' in request.form
                 
-                # Validation numérique
                 try:
                     temp = float(request.form.get('temperature', 0.7))
                     settings.temperature = max(0.0, min(1.0, temp))
@@ -493,7 +422,6 @@ def ai_settings():
 
 @app.route('/chat/<agent_type>')
 def chat(agent_type):
-    """Interface chat"""
     if 'user_id' not in session:
         return redirect(url_for('login'))
     
@@ -506,7 +434,6 @@ def chat(agent_type):
 
 @app.route('/api/chat', methods=['POST'])
 def api_chat():
-    """API chat sécurisée"""
     if 'user_id' not in session:
         return jsonify({'error': 'Non connecté'}), 401
     
@@ -524,14 +451,11 @@ def api_chat():
         if len(message) > 5000:
             return jsonify({'error': 'Message trop long'}), 400
         
-        # Récupérer utilisateur et settings
         user_id = session['user_id']
         settings = get_user_settings(user_id)
         
-        # Réponse IA
         response = ai_system.get_response(message, agent_type, settings)
         
-        # Sauvegarder conversation
         try:
             conversation_data = {
                 'user_message': message,
@@ -559,7 +483,6 @@ def api_chat():
 
 @app.route('/api/status')
 def api_status():
-    """Status API"""
     try:
         return jsonify({
             'status': 'ok',
@@ -576,10 +499,8 @@ def api_status():
         logger.error(f"Erreur status: {e}")
         return jsonify({'error': 'Erreur status'}), 500
 
-# PWA Routes
 @app.route('/manifest.json')
 def manifest():
-    """Manifest PWA"""
     try:
         manifest_data = {
             "name": "WaveAI - Agents IA Intelligents",
@@ -605,7 +526,6 @@ def manifest():
         logger.error(f"Erreur manifest: {e}")
         return jsonify({"error": "Erreur manifest"}), 500
 
-# Gestionnaires d'erreurs
 @app.errorhandler(404)
 def not_found_error(error):
     return render_template('error.html', error='Page non trouvée'), 404
@@ -615,15 +535,11 @@ def internal_error(error):
     db.session.rollback()
     return render_template('error.html', error='Erreur interne'), 500
 
-# Initialisation sécurisée
 def init_database():
-    """Initialisation DB avec sécurité maximale"""
     try:
         with app.app_context():
-            # Créer toutes les tables
             db.create_all()
             
-            # Version par défaut
             if not AppVersion.query.filter_by(is_current=True).first():
                 version = AppVersion(
                     version='1.0.0',
@@ -635,14 +551,11 @@ def init_database():
             
             logger.info("✅ Base de données WaveAI initialisée avec succès")
             return True
-            
     except Exception as e:
         logger.error(f"❌ Erreur critique initialisation DB: {e}")
         return False
 
-# Point d'entrée SÉCURISÉ
 if __name__ == '__main__':
-    # Mode développement
     if init_database():
         port = int(os.environ.get('PORT', 5000))
         debug = os.environ.get('FLASK_ENV') == 'development'
@@ -650,5 +563,4 @@ if __name__ == '__main__':
     else:
         logger.error("❌ Échec initialisation - Arrêt de l'application")
 else:
-    # Mode production (Render, etc.)
     init_database()
