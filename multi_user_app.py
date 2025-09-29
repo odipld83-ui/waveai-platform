@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify, session, redirect, u
 from flask_sqlalchemy import SQLAlchemy
 import os
 from datetime import datetime
+from universal_ai_system import universal_ai
 import secrets
 
 app = Flask(__name__)
