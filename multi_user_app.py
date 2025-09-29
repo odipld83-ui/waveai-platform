@@ -56,11 +56,12 @@ def agent_interface(agent_name):
         return redirect(url_for('login'))
     
     agents = {
-        'alex': {'name': 'Alex Wave', 'speciality': 'Gmail & Productivité', 'icon': '🏄‍♂️', 'color': '#667eea'},
-        'lina': {'name': 'Lina Wave', 'speciality': 'LinkedIn & Networking', 'icon': '🌊', 'color': '#764ba2'},
-        'marco': {'name': 'Marco Wave', 'speciality': 'Réseaux Sociaux', 'icon': '🏄‍♀️', 'color': '#8b5cf6'},
-        'sofia': {'name': 'Sofia Wave', 'speciality': 'Calendrier & Planning', 'icon': '🌊', 'color': '#06b6d4'}
-    }
+    'alex': {'name': 'Alex Wave', 'speciality': 'Gmail & Productivité', 'icon': '🏄‍♂️', 'color': '#667eea'},
+    'lina': {'name': 'Lina Wave', 'speciality': 'LinkedIn & Networking', 'icon': '🌊', 'color': '#764ba2'},
+    'marco': {'name': 'Marco Wave', 'speciality': 'Réseaux Sociaux', 'icon': '🏄‍♀️', 'color': '#8b5cf6'},
+    'sofia': {'name': 'Sofia Wave', 'speciality': 'Planning & Organisation', 'icon': '🌊', 'color': '#06b6d4'},
+    'kai': {'name': 'Kai Wave', 'speciality': 'Assistant Conversationnel', 'icon': '🤖', 'color': '#10b981'}
+}
     
     if agent_name not in agents:
         return redirect(url_for('dashboard'))
@@ -323,9 +324,25 @@ def user_stats():
     total_messages = ChatMessage.query.filter_by(user_id=user.id).count()
     
     agents_stats = {}
-    for agent in ['alex', 'lina', 'marco', 'sofia']:
-        count = ChatMessage.query.filter_by(user_id=user.id, agent_name=agent).count()
-        agents_stats[agent] = count
+    for agent in ['alex', 'lina', 'marco', 'sofia', 'kai']:
+    count = ChatMessage.query.filter_by(user_id=user.id, agent_name=agent).count()
+    agents_stats[agent] = count
+    if agent_name == 'kai':
+    # Interface spéciale pour l'agent conversationnel
+    conversation_starters = [
+        "Comment ça va aujourd'hui ?",
+        "Raconte-moi quelque chose d'intéressant",
+        "J'ai une question random...",
+        "Aide-moi à réfléchir",
+        "Discutons de philosophie",
+        "Explique-moi quelque chose"
+    ]
+else:
+    conversation_starters = [
+        f"Aide-moi à organiser ma journée",
+        f"Quelles sont tes fonctionnalités ?",
+        f"Comment optimiser ma productivité ?"
+    ]
     
     return jsonify({
         'success': True,
