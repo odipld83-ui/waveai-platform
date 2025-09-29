@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+
+{% block title %}WaveAI - Surfez sur la Vague de l'IA{% endblock %}
+
+{% block body_class %}landing-page{% endblock %}
+
+{% block content %}
+<!-- Hero Section avec animation océan -->
+<section class="hero-section position-relative overflow-hidden">
+    <div class="wave-animation"></div>
+    <div class="container">
+        <div class="row min-vh-100 align-items-center">
+            <div class="col-lg-6">
+                <div class="hero-content">
+                    <h1 class="display-3 fw-bold mb-4">
+                        <span class="wave-gradient">Surfez sur la Vague</span><br>
+                        de l'Intelligence Artificielle
+                    </h1>
+                    <p class="lead mb-5">
+                        Découvrez nos 4 agents IA spécialisés qui révolutionnent votre productivité. 
+                        Gmail, LinkedIn, réseaux sociaux et calendrier : tout en un seul endroit.
+                    </p>
+
+                    <div class="d-flex flex-wrap gap-3 mb-4">
+                        <a href="{{ url_for('login') }}" class="btn btn-wave-primary btn-lg">
+                            <i class="fas fa-rocket me-2"></i>Commencer Maintenant
+                        </a>
+                        <button class="btn btn-outline-light btn-lg" onclick="scrollToAgents()">
+                            <i class="fas fa-info-circle me-2"></i>En Savoir Plus
+                        </button>
+                    </div>
+
+                    <!-- Badges de confiance -->
+                    <div class="trust-badges">
+                        <span class="badge bg-success me-2">
+                            <i class="fas fa-shield-alt me-1"></i>100% Sécurisé
+                        </span>
+                        <span class="badge bg-info me-2">
+                            <i class="fas fa-users me-1"></i>Multi-utilisateurs
+                        </span>
+                        <span class="badge bg-warning text-dark">
+                            <i class="fas fa-bolt me-1"></i>Temps Réel
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="hero-visual text-center">
+                    <div class="agents-preview">
+                        <div class="agent-card floating" style="--delay: 0s">
+                            <div class="agent-icon">📧</div>
+                            <h6>Alex Wave</h6>
+                        </div>
+                        <div class="agent-card floating" style="--delay: 0.5s">
+                            <div class="agent-icon">💼</div>
+                            <h6>Lina Wave</h6>
+                        </div>
+                        <div class="agent-card floating" style="--delay: 1s">
+                            <div class="agent-icon">📱</div>
+                            <h6>Marco Wave</h6>
+                        </div>
+                        <div class="agent-card floating" style="--delay: 1.5s">
+                            <div class="agent-icon">📅</div>
+                            <h6>Sofia Wave</h6>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Section Agents Wave -->
+<section id="agents" class="agents-section py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="display-4 fw-bold mb-3">
+                Rencontrez Nos <span class="wave-gradient">Agents Wave</span>
+            </h2>
+            <p class="lead text-muted">
+                4 spécialistes IA pour transformer votre workflow quotidien
+            </p>
+        </div>
+
+        <div class="row g-4">
+            <!-- Alex Wave - Gmail -->
+            <div class="col-md-6 col-lg-3">
+                <div class="agent-showcase h-100">
+                    <div class="agent-header" style="background: linear-gradient(135deg, #4285F4, #34A853)">
+                        <div class="agent-avatar">📧</div>
+                        <h4 class="text-white">Alex Wave</h4>
+                        <p class="text-white-50 mb-0">Expert Gmail & Productivité</p>
+                    </div>
+                    <div class="agent-body">
+                        <ul class="feature-list">
+                            <li><i class="fas fa-check text-success me-2"></i>Tri automatique des emails</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Réponses intelligentes</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Rappels contextuels</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Workflows automatisés</li>
+                        </ul>
+                        <a href="{{ url_for('login') }}" class="btn btn-outline-primary w-100">
+                            Essayer Alex Wave
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lina Wave - LinkedIn -->
+            <div class="col-md-6 col-lg-3">
+                <div class="agent-showcase h-100">
+                    <div class="agent-header" style="background: linear-gradient(135deg, #0077B5, #00A0DC)">
+                        <div class="agent-avatar">💼</div>
+                        <h4 class="text-white">Lina Wave</h4>
+                        <p class="text-white-50 mb-0">Spécialiste LinkedIn & Networking</p>
+                    </div>
+                    <div class="agent-body">
+                        <ul class="feature-list">
+                            <li><i class="fas fa-check text-success me-2"></i>Messages personnalisés</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Analyse de réseau</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Stratégie de contenu</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Lead generation</li>
+                        </ul>
+                        <a href="{{ url_for('login') }}" class="btn btn-outline-primary w-100">
+                            Essayer Lina Wave
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Marco Wave - Social -->
+            <div class="col-md-6 col-lg-3">
+                <div class="agent-showcase h-100">
+                    <div class="agent-header" style="background: linear-gradient(135deg, #E4405F, #F56040)">
+                        <div class="agent-avatar">📱</div>
+                        <h4 class="text-white">Marco Wave</h4>
+                        <p class="text-white-50 mb-0">Gestionnaire Réseaux Sociaux</p>
+                    </div>
+                    <div class="agent-body">
+                        <ul class="feature-list">
+                            <li><i class="fas fa-check text-success me-2"></i>Planification de posts</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Analyse d'engagement</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Tendances temps réel</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Multi-plateformes</li>
+                        </ul>
+                        <a href="{{ url_for('login') }}" class="btn btn-outline-primary w-100">
+                            Essayer Marco Wave
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sofia Wave - Calendrier -->
+            <div class="col-md-6 col-lg-3">
+                <div class="agent-showcase h-100">
+                    <div class="agent-header" style="background: linear-gradient(135deg, #34A853, #0F9D58)">
+                        <div class="agent-avatar">📅</div>
+                        <h4 class="text-white">Sofia Wave</h4>
+                        <p class="text-white-50 mb-0">Organisatrice Calendrier & Planning</p>
+                    </div>
+                    <div class="agent-body">
+                        <ul class="feature-list">
+                            <li><i class="fas fa-check text-success me-2"></i>Planification intelligente</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Synchronisation calendriers</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Rappels contextuels</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Optimisation temps</li>
+                        </ul>
+                        <a href="{{ url_for('login') }}" class="btn btn-outline-primary w-100">
+                            Essayer Sofia Wave
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Section Avantages -->
+<section class="benefits-section py-5 bg-light">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h2 class="display-5 fw-bold mb-4">
+                    Pourquoi Choisir <span class="wave-gradient">WaveAI</span> ?
+                </h2>
+
+                <div class="benefit-item mb-4">
+                    <div class="d-flex align-items-start">
+                        <div class="benefit-icon me-3">🚀</div>
+                        <div>
+                            <h5>Gain de Productivité Immédiat</h5>
+                            <p class="text-muted mb-0">Automatisez jusqu'à 80% de vos tâches répétitives grâce à nos agents IA spécialisés.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="benefit-item mb-4">
+                    <div class="d-flex align-items-start">
+                        <div class="benefit-icon me-3">🔒</div>
+                        <div>
+                            <h5>Sécurité & Confidentialité</h5>
+                            <p class="text-muted mb-0">Vos données restent privées. Authentification sécurisée et chiffrement end-to-end.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="benefit-item mb-4">
+                    <div class="d-flex align-items-start">
+                        <div class="benefit-icon me-3">⚡</div>
+                        <div>
+                            <h5>Interface Temps Réel</h5>
+                            <p class="text-muted mb-0">Chat instantané avec vos agents IA. Réponses intelligentes en temps réel.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number">80%</div>
+                        <div class="stat-label">Gain de Temps</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">4</div>
+                        <div class="stat-label">Agents IA Spécialisés</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">24/7</div>
+                        <div class="stat-label">Disponibilité</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">∞</div>
+                        <div class="stat-label">Utilisateurs</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Section CTA Final -->
+<section class="cta-section py-5 text-center">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <h2 class="display-4 fw-bold mb-4">
+                    Prêt à <span class="wave-gradient">Surfer sur la Vague</span> ?
+                </h2>
+                <p class="lead mb-5">
+                    Rejoignez des milliers d'utilisateurs qui ont déjà transformé leur productivité avec WaveAI.
+                    Connexion universelle en 30 secondes !
+                </p>
+
+                <div class="cta-buttons">
+                    <a href="{{ url_for('login') }}" class="btn btn-wave-primary btn-lg me-3">
+                        <i class="fas fa-rocket me-2"></i>Commencer Gratuitement
+                    </a>
+                    <small class="text-muted d-block mt-3">
+                        <i class="fas fa-check-circle me-1 text-success"></i>
+                        Aucune carte de crédit requise • Accès immédiat • Support Gmail, Outlook, Yahoo...
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function scrollToAgents() {
+    document.getElementById('agents').scrollIntoView({ 
+        behavior: 'smooth' 
+    });
+}
+
+// Animation des cartes d'agents au scroll
+const observerOptions = {
+    threshold: 0.1,
+    rootMargin: '0px 0px -50px 0px'
+};
+
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            entry.target.classList.add('animate-in');
+        }
+    });
+}, observerOptions);
+
+document.querySelectorAll('.agent-showcase').forEach(card => {
+    observer.observe(card);
+});
+</script>
+{% endblock %}

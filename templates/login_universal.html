@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+
+{% block title %}Connexion - WaveAI{% endblock %}
+
+{% block body_class %}login-page{% endblock %}
+
+{% block content %}
+<section class="login-section min-vh-100 d-flex align-items-center">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-5">
+                <div class="login-card">
+                    <div class="login-header text-center mb-4">
+                        <div class="wave-logo mb-3">
+                            <span class="wave-icon">🌊</span>
+                            <h2 class="brand-name">WaveAI</h2>
+                        </div>
+                        <h3 class="fw-bold">Connexion Universelle</h3>
+                        <p class="text-muted">
+                            Entrez votre email (Gmail, Outlook, Yahoo, ou autre)
+                        </p>
+                    </div>
+
+                    <form id="loginForm" class="login-form">
+                        <div class="mb-4">
+                            <label for="email" class="form-label">
+                                <i class="fas fa-envelope me-2"></i>Votre Email
+                            </label>
+                            <input type="email" 
+                                   class="form-control form-control-lg" 
+                                   id="email" 
+                                   name="email"
+                                   placeholder="exemple@gmail.com"
+                                   required>
+                            <div class="provider-info mt-2" id="providerInfo" style="display: none;">
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    <span id="providerText"></span>
+                                </small>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-wave-primary btn-lg w-100 mb-3">
+                            <span class="btn-text">
+                                <i class="fas fa-magic me-2"></i>Envoyer le Lien Magique
+                            </span>
+                            <span class="btn-loading" style="display: none;">
+                                <i class="fas fa-spinner fa-spin me-2"></i>Connexion en cours...
+                            </span>
+                        </button>
+
+                        <!-- Mode démo info -->
+                        <div class="demo-info">
+                            <div class="alert alert-info border-0">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Mode Démo :</strong> Connexion automatique activée. 
+                                En production, un lien magique sera envoyé à votre email.
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Providers supportés -->
+                    <div class="supported-providers mt-4">
+                        <p class="text-center text-muted mb-3">
+                            <small>Providers Email Supportés :</small>
+                        </p>
+                        <div class="providers-grid">
+                            <div class="provider-badge">
+                                <i class="fab fa-google"></i>
+                                <span>Gmail</span>
+                            </div>
+                            <div class="provider-badge">
+                                <i class="fab fa-microsoft"></i>
+                                <span>Outlook</span>
+                            </div>
+                            <div class="provider-badge">
+                                <i class="fas fa-envelope"></i>
+                                <span>Yahoo</span>
+                            </div>
+                            <div class="provider-badge">
+                                <i class="fas fa-plus"></i>
+                                <span>Autres</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Avantages -->
+                    <div class="login-benefits mt-4">
+                        <div class="benefit-item">
+                            <i class="fas fa-shield-alt text-success me-2"></i>
+                            <small>Connexion 100% sécurisée</small>
+                        </div>
+                        <div class="benefit-item">
+                            <i class="fas fa-bolt text-warning me-2"></i>
+                            <small>Accès instantané aux agents IA</small>
+                        </div>
+                        <div class="benefit-item">
+                            <i class="fas fa-users text-info me-2"></i>
+                            <small>Plateforme multi-utilisateurs</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Retour à l'accueil -->
+                <div class="text-center mt-4">
+                    <a href="{{ url_for('landing') }}" class="text-decoration-none">
+                        <i class="fas fa-arrow-left me-2"></i>Retour à l'accueil
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Détection automatique du provider email
+document.getElementById('email').addEventListener('input', function(e) {
+    const email = e.target.value.toLowerCase();
+    const providerInfo = document.getElementById('providerInfo');
+    const providerText = document.getElementById('providerText');
+
+    if (email.includes('@')) {
+        const domain = email.split('@')[1];
+        let provider = '';
+        let icon = '';
+
+        if (domain.includes('gmail') || domain.includes('googlemail')) {
+            provider = 'Gmail';
+            icon = '📧';
+        } else if (domain.includes('outlook') || domain.includes('hotmail') || domain.includes('live')) {
+            provider = 'Outlook';
+            icon = '📬';
+        } else if (domain.includes('yahoo')) {
+            provider = 'Yahoo';
+            icon = '📮';
+        } else if (domain.includes('orange')) {
+            provider = 'Orange';
+            icon = '🟠';
+        } else if (domain.includes('free')) {
+            provider = 'Free';
+            icon = '🆓';
+        } else {
+            provider = 'Email personnalisé';
+            icon = '✉️';
+        }
+
+        providerText.innerHTML = `${icon} Provider détecté: <strong>${provider}</strong>`;
+        providerInfo.style.display = 'block';
+    } else {
+        providerInfo.style.display = 'none';
+    }
+});
+
+// Gestion du formulaire de connexion
+document.getElementById('loginForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const email = document.getElementById('email').value.trim();
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const btnText = submitBtn.querySelector('.btn-text');
+    const btnLoading = submitBtn.querySelector('.btn-loading');
+
+    if (!email) {
+        showAlert('Veuillez entrer votre email', 'error');
+        return;
+    }
+
+    // Animation de chargement
+    submitBtn.disabled = true;
+    btnText.style.display = 'none';
+    btnLoading.style.display = 'inline-block';
+
+    try {
+        const response = await fetch('/api/auth/magic-link', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ email: email })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showAlert(result.message, 'success');
+
+            if (result.redirect) {
+                setTimeout(() => {
+                    window.location.href = result.redirect;
+                }, 1500);
+            }
+        } else {
+            showAlert(result.message, 'error');
+        }
+
+    } catch (error) {
+        showAlert('Erreur de connexion. Veuillez réessayer.', 'error');
+    } finally {
+        // Restaurer le bouton
+        submitBtn.disabled = false;
+        btnText.style.display = 'inline-block';
+        btnLoading.style.display = 'none';
+    }
+});
+
+// Fonction d'affichage des alertes
+function showAlert(message, type) {
+    // Supprimer les anciennes alertes
+    document.querySelectorAll('.dynamic-alert').forEach(alert => alert.remove());
+
+    const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+    const icon = type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-triangle';
+
+    const alertHtml = `
+        <div class="alert ${alertClass} dynamic-alert border-0 mb-3" role="alert">
+            <i class="${icon} me-2"></i>${message}
+        </div>
+    `;
+
+    document.querySelector('.login-form').insertAdjacentHTML('afterbegin', alertHtml);
+
+    // Auto-suppression après 5 secondes pour les erreurs
+    if (type === 'error') {
+        setTimeout(() => {
+            document.querySelector('.dynamic-alert')?.remove();
+        }, 5000);
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+
+{% block title %}Tableau de Bord - WaveAI{% endblock %}
+
+{% block body_class %}dashboard-page{% endblock %}
+
+{% block content %}
+<section class="dashboard-section py-4">
+    <div class="container-fluid">
+        <!-- Header utilisateur -->
+        <div class="dashboard-header mb-4">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <div class="user-welcome">
+                        <h1 class="h3 mb-2">
+                            <span class="wave-icon me-2">🌊</span>
+                            Bienvenue, <span class="wave-gradient">{{ user.name }}</span> !
+                        </h1>
+                        <p class="text-muted mb-0">
+                            <i class="fas fa-envelope me-2"></i>{{ user.email }}
+                            {% if user.provider %}
+                            <span class="badge bg-light text-dark ms-2">
+                                {{ user.provider.title() }}
+                            </span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <div class="user-stats">
+                        <small class="text-muted">
+                            <i class="fas fa-calendar me-1"></i>Membre depuis {{ stats.member_since }}<br>
+                            <i class="fas fa-sign-in-alt me-1"></i>{{ stats.login_count }} connexions
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Agents Wave Grid -->
+        <div class="agents-grid mb-5">
+            <div class="row g-4">
+                <!-- Alex Wave - Gmail -->
+                <div class="col-md-6 col-xl-3">
+                    <div class="agent-dashboard-card h-100" data-agent="alex">
+                        <div class="agent-card-header alex-theme">
+                            <div class="agent-avatar-lg">📧</div>
+                            <div class="agent-info">
+                                <h5 class="agent-name">Alex Wave</h5>
+                                <p class="agent-subtitle">Gmail & Productivité</p>
+                            </div>
+                            <div class="agent-status online">
+                                <i class="fas fa-circle"></i>
+                            </div>
+                        </div>
+                        <div class="agent-card-body">
+                            <p class="agent-description">
+                                Organisez vos emails, automatisez vos réponses et boostez votre productivité.
+                            </p>
+                            <div class="agent-features">
+                                <span class="feature-tag">📨 Tri Auto</span>
+                                <span class="feature-tag">🤖 IA Réponses</span>
+                                <span class="feature-tag">⏰ Rappels</span>
+                            </div>
+                        </div>
+                        <div class="agent-card-footer">
+                            <a href="{{ url_for('agent_interface', agent_name='alex') }}" 
+                               class="btn btn-alex w-100">
+                                <i class="fas fa-comments me-2"></i>Chatter avec Alex
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lina Wave - LinkedIn -->
+                <div class="col-md-6 col-xl-3">
+                    <div class="agent-dashboard-card h-100" data-agent="lina">
+                        <div class="agent-card-header lina-theme">
+                            <div class="agent-avatar-lg">💼</div>
+                            <div class="agent-info">
+                                <h5 class="agent-name">Lina Wave</h5>
+                                <p class="agent-subtitle">LinkedIn & Networking</p>
+                            </div>
+                            <div class="agent-status online">
+                                <i class="fas fa-circle"></i>
+                            </div>
+                        </div>
+                        <div class="agent-card-body">
+                            <p class="agent-description">
+                                Développez votre réseau professionnel et optimisez votre présence LinkedIn.
+                            </p>
+                            <div class="agent-features">
+                                <span class="feature-tag">🤝 Networking</span>
+                                <span class="feature-tag">📊 Analyse</span>
+                                <span class="feature-tag">📝 Contenu</span>
+                            </div>
+                        </div>
+                        <div class="agent-card-footer">
+                            <a href="{{ url_for('agent_interface', agent_name='lina') }}" 
+                               class="btn btn-lina w-100">
+                                <i class="fas fa-comments me-2"></i>Chatter avec Lina
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Marco Wave - Social -->
+                <div class="col-md-6 col-xl-3">
+                    <div class="agent-dashboard-card h-100" data-agent="marco">
+                        <div class="agent-card-header marco-theme">
+                            <div class="agent-avatar-lg">📱</div>
+                            <div class="agent-info">
+                                <h5 class="agent-name">Marco Wave</h5>
+                                <p class="agent-subtitle">Réseaux Sociaux</p>
+                            </div>
+                            <div class="agent-status online">
+                                <i class="fas fa-circle"></i>
+                            </div>
+                        </div>
+                        <div class="agent-card-body">
+                            <p class="agent-description">
+                                Planifiez, créez et optimisez votre présence sur tous les réseaux sociaux.
+                            </p>
+                            <div class="agent-features">
+                                <span class="feature-tag">📅 Planning</span>
+                                <span class="feature-tag">📈 Engagement</span>
+                                <span class="feature-tag">🔥 Tendances</span>
+                            </div>
+                        </div>
+                        <div class="agent-card-footer">
+                            <a href="{{ url_for('agent_interface', agent_name='marco') }}" 
+                               class="btn btn-marco w-100">
+                                <i class="fas fa-comments me-2"></i>Chatter avec Marco
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sofia Wave - Calendrier -->
+                <div class="col-md-6 col-xl-3">
+                    <div class="agent-dashboard-card h-100" data-agent="sofia">
+                        <div class="agent-card-header sofia-theme">
+                            <div class="agent-avatar-lg">📅</div>
+                            <div class="agent-info">
+                                <h5 class="agent-name">Sofia Wave</h5>
+                                <p class="agent-subtitle">Calendrier & Planning</p>
+                            </div>
+                            <div class="agent-status online">
+                                <i class="fas fa-circle"></i>
+                            </div>
+                        </div>
+                        <div class="agent-card-body">
+                            <p class="agent-description">
+                                Optimisez votre temps et synchronisez tous vos calendriers intelligemment.
+                            </p>
+                            <div class="agent-features">
+                                <span class="feature-tag">🧠 Smart</span>
+                                <span class="feature-tag">🔄 Sync</span>
+                                <span class="feature-tag">⏰ Rappels</span>
+                            </div>
+                        </div>
+                        <div class="agent-card-footer">
+                            <a href="{{ url_for('agent_interface', agent_name='sofia') }}" 
+                               class="btn btn-sofia w-100">
+                                <i class="fas fa-comments me-2"></i>Chatter avec Sofia
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistiques et infos -->
+        <div class="row g-4 mb-4">
+            <!-- Statistiques rapides -->
+            <div class="col-md-8">
+                <div class="stats-card">
+                    <h5 class="card-title mb-3">
+                        <i class="fas fa-chart-line me-2"></i>Vos Statistiques WaveAI
+                    </h5>
+                    <div class="row g-3">
+                        <div class="col-6 col-md-3">
+                            <div class="stat-item text-center">
+                                <div class="stat-value text-primary">{{ stats.login_count }}</div>
+                                <div class="stat-label">Connexions</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="stat-item text-center">
+                                <div class="stat-value text-success">4</div>
+                                <div class="stat-label">Agents Disponibles</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="stat-item text-center">
+                                <div class="stat-value text-info">24/7</div>
+                                <div class="stat-label">Disponibilité</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="stat-item text-center">
+                                <div class="stat-value text-warning">∞</div>
+                                <div class="stat-label">Possibilités</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Informations système -->
+            <div class="col-md-4">
+                <div class="system-info-card">
+                    <h6 class="card-title mb-3">
+                        <i class="fas fa-info-circle me-2"></i>Informations Système
+                    </h6>
+                    <div class="info-items">
+                        <div class="info-item">
+                            <span class="info-label">Version :</span>
+                            <span class="info-value">
+                                {% if version %}{{ version.version }}{% else %}1.0.0{% endif %}
+                            </span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Statut :</span>
+                            <span class="info-value">
+                                <span class="badge bg-success">En ligne</span>
+                            </span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Dernière connexion :</span>
+                            <span class="info-value">{{ stats.last_login }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions rapides -->
+        <div class="quick-actions">
+            <div class="row g-3">
+                <div class="col-md-6 col-lg-3">
+                    <a href="{{ url_for('agent_interface', agent_name='alex') }}" class="quick-action-card">
+                        <div class="action-icon">📧</div>
+                        <div class="action-text">
+                            <div class="action-title">Organiser Emails</div>
+                            <div class="action-subtitle">avec Alex Wave</div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <a href="{{ url_for('agent_interface', agent_name='lina') }}" class="quick-action-card">
+                        <div class="action-icon">💼</div>
+                        <div class="action-text">
+                            <div class="action-title">Développer Réseau</div>
+                            <div class="action-subtitle">avec Lina Wave</div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <a href="{{ url_for('agent_interface', agent_name='marco') }}" class="quick-action-card">
+                        <div class="action-icon">📱</div>
+                        <div class="action-text">
+                            <div class="action-title">Gérer Social</div>
+                            <div class="action-subtitle">avec Marco Wave</div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <a href="{{ url_for('agent_interface', agent_name='sofia') }}" class="quick-action-card">
+                        <div class="action-icon">📅</div>
+                        <div class="action-text">
+                            <div class="action-title">Planifier Temps</div>
+                            <div class="action-subtitle">avec Sofia Wave</div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Animation d'entrée des cartes
+document.addEventListener('DOMContentLoaded', function() {
+    const cards = document.querySelectorAll('.agent-dashboard-card');
+    cards.forEach((card, index) => {
+        card.style.animationDelay = `${index * 0.1}s`;
+        card.classList.add('animate-slide-up');
+    });
+});
+
+// Effet hover sur les cartes d'agents
+document.querySelectorAll('.agent-dashboard-card').forEach(card => {
+    card.addEventListener('mouseenter', function() {
+        this.style.transform = 'translateY(-5px)';
+    });
+
+    card.addEventListener('mouseleave', function() {
+        this.style.transform = 'translateY(0)';
+    });
+});
+</script>
+{% endblock %}

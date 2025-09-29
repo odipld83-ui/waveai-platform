@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: waveai-platform
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --worker-class eventlet -w 1 --bind 0.0.0.0:$PORT multi_user_app:app
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: PYTHON_VERSION
+        value: 3.11.0
+    autoDeploy: true
+
+databases:
+  - name: waveai-db
+    databaseName: waveai
+    user: waveai_user
+    plan: free
