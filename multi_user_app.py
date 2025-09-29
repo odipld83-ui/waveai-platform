@@ -1,6 +1,5 @@
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
-from flask_socketio import SocketIO, emit
 import os
 import hashlib
 import secrets
