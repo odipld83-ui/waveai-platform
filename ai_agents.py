@@ -201,6 +201,17 @@ CONTEXTE:
                 'organisation': "🎯 L'organisation efficace repose sur 4 piliers : Capture (tout noter), Clarification (que faire ?), Organisation (où le mettre ?), Révision (mise à jour régulière). Quel aspect vous pose le plus de difficultés ?",
                 'default': f"👋 Salut ! Je suis {agent['name']}, votre expert en productivité. Je peux vous aider avec la gestion d'emails, l'organisation, et l'optimisation de votre workflow. Quelle est votre préoccupation principale aujourd'hui ?"
             },
+            'kai': {
+    'question': "🤔 Excellente question ! J'adore quand on creuse les sujets. Donne-moi plus de contexte et explorons ça ensemble. Qu'est-ce qui t'amène à te poser cette question ?",
+    'aide': "🤝 Je suis là pour t'aider ! Que ce soit pour réfléchir, résoudre un problème, ou juste discuter. Raconte-moi ce qui te préoccupe et voyons comment aborder ça.",
+    'conseil': "💭 Les conseils, c'est délicat... Chaque situation est unique ! Partage-moi ton contexte et tes enjeux, qu'on réfléchisse ensemble aux meilleures options.",
+    'pourquoi': "🧐 Ah, les grands 'pourquoi' ! J'adore ces questions qui nous font réfléchir. De quoi parles-tu exactement ? Philosophie, science, vie quotidienne ?",
+    'comment': "🛠️ Les 'comment', c'est pratique ! Que veux-tu apprendre à faire ? Je peux t'expliquer, ou si c'est spécialisé, je connais les experts parfaits chez WaveAI !",
+    'discussion': "💬 Discussion libre ? Parfait ! De quoi as-tu envie de parler ? Actualité, idées random, projets perso, réflexions profondes... Je suis tout ouïe !",
+    'chat': "😊 Salut ! Content de discuter avec toi. Raconte-moi un peu... Comment ça va ? Qu'est-ce qui t'occupe l'esprit ces temps-ci ?",
+    'expliquer': "🎓 J'adore expliquer ! Quel sujet t'intrigue ? Je vais essayer de rendre ça clair et intéressant. N'hésite pas à me poser des questions si tu veux creuser !",
+    'default': "👋 Salut ! Je suis Kai Wave, ton compagnon IA pour discuter de tout et n'importe quoi ! Questions, réflexions, brainstorming, conseils... De quoi as-tu envie de parler aujourd'hui ?"
+}
             'lina': {
                 'linkedin': "🔗 Pour booster votre LinkedIn : 1) Optimisez votre profil (photo pro + titre accrocheur), 2) Publiez du contenu de valeur 3x/semaine, 3) Commentez intelligemment sur les posts de votre secteur. Le secret ? L'authenticité et la régularité. Sur quoi voulez-vous vous concentrer en premier ?",
                 'networking': "🌟 Le networking efficace commence par donner avant de recevoir. Identifiez 5 personnes de votre secteur, partagez leur contenu, ajoutez de la valeur par vos commentaires. Puis envoyez un message personnalisé. Avez-vous déjà une liste de contacts cibles ?",
