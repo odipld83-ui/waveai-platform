@@ -386,12 +386,19 @@ def init_database():
 
 # === POINT D'ENTRÉE ===
 
-if __name__ == '__main__':
-    with app.app_context():
-        init_database()
+i# Initialisation base de données au démarrage
+@app.before_first_request
+def create_tables():
+    db.create_all()
+    # Créer version initiale
+    if not AppVersion.query.first():
+        version = AppVersion(version='1.0.0', description='Version initiale WaveAI', is_current=True)
+        db.session.add(version)
+        db.session.commit()
 
-    # Configuration pour déploiement
-    port = int(os.environ.get('PORT', 5000))
+if __name__ == '__main__':
+    app.run(debug=False)
+
     debug = os.environ.get('FLASK_ENV') == 'development'
 
     socketio.run(app, 
